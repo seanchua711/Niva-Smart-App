@@ -1,0 +1,2251 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#1a6b8a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Niva">
+<title>Niva Health AI</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg-primary:#ffffff;--bg-secondary:#f5f5f5;--bg-tertiary:#eeeeee;
+  --text-primary:#111111;--text-secondary:#555555;--text-tertiary:#888888;
+  --text-info:#185FA5;--text-success:#3B6D11;--text-danger:#A32D2D;--text-warning:#854F0B;
+  --bg-info:#E6F1FB;--bg-success:#EAF3DE;--bg-danger:#FCEBEB;--bg-warning:#FAEEDA;
+  --border-tertiary:rgba(0,0,0,0.12);--border-secondary:rgba(0,0,0,0.22);--border-primary:rgba(0,0,0,0.35);
+  --radius-md:8px;--radius-lg:12px;--teal:#1a6b8a;
+  --font:system-ui,-apple-system,sans-serif;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg-primary:#1a1a1a;--bg-secondary:#242424;--bg-tertiary:#2a2a2a;
+    --text-primary:#f0f0f0;--text-secondary:#aaaaaa;--text-tertiary:#666666;
+    --text-info:#85B7EB;--text-success:#97C459;--text-danger:#F09595;--text-warning:#EF9F27;
+    --bg-info:#0C447C22;--bg-success:#27500A22;--bg-danger:#791F1F22;--bg-warning:#63380622;
+    --border-tertiary:rgba(255,255,255,0.08);--border-secondary:rgba(255,255,255,0.18);--border-primary:rgba(255,255,255,0.3);
+  }
+}
+body{font-family:var(--font);background:var(--bg-tertiary);color:var(--text-primary);min-height:100vh}
+.app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--bg-tertiary)}
+.screen{display:none;padding:1rem 1rem 2rem}.screen.active{display:block}
+.screen.full{padding:0}
+.intro-wrap{min-height:100vh;display:flex;flex-direction:column}
+.intro-hero{background:linear-gradient(160deg,#1a6b8a 0%,#0d4f68 100%);padding:3rem 2rem 2.5rem;text-align:center;color:#fff}
+.intro-hero img{height:48px;object-fit:contain;margin-bottom:1.25rem;filter:brightness(0) invert(1)}
+.intro-hero h1{font-size:22px;font-weight:600;margin-bottom:8px}
+.intro-hero p{font-size:14px;opacity:.85;line-height:1.6}
+.intro-features{padding:1.5rem 1.25rem;flex:1}
+.feature-item{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:0.5px solid var(--border-tertiary)}
+.feature-item:last-child{border-bottom:none}
+.feature-icon{width:44px;height:44px;border-radius:var(--radius-lg);background:var(--bg-info);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.feature-title{font-size:14px;font-weight:600;margin-bottom:3px}
+.feature-desc{font-size:13px;color:var(--text-secondary);line-height:1.5}
+.intro-footer{padding:1.25rem}
+.lang-toggle{display:flex;background:var(--bg-secondary);border-radius:var(--radius-lg);padding:3px;gap:3px;margin-bottom:1rem}
+.lang-btn{flex:1;padding:8px;border:none;background:transparent;border-radius:var(--radius-md);font-size:13px;font-weight:500;color:var(--text-secondary);cursor:pointer}
+.lang-btn.active{background:var(--bg-primary);color:var(--text-primary);border:0.5px solid var(--border-tertiary)}
+.start-btn{width:100%;padding:14px;background:var(--teal);color:#fff;border:none;border-radius:var(--radius-lg);font-size:15px;font-weight:600;cursor:pointer}
+.card{background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1rem}
+.logo-wrap{text-align:center;padding:2rem 0 1.25rem}
+.logo-wrap img{height:48px;object-fit:contain;display:block;margin:0 auto 10px}
+.logo-wrap h1{font-size:14px;font-weight:500;color:var(--text-secondary)}
+.logo-wrap p{font-size:13px;color:var(--text-tertiary);margin-top:4px}
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:13px;color:var(--text-secondary);margin-bottom:6px}
+.field input{width:100%;padding:10px 12px;border:0.5px solid var(--border-secondary);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-primary);font-size:15px;outline:none}
+.field .hint{font-size:12px;color:var(--text-tertiary);margin-top:4px}
+.primary-btn{width:100%;padding:13px;background:var(--text-primary);color:var(--bg-primary);border:none;border-radius:var(--radius-lg);font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:.5rem}
+.primary-btn:active{opacity:.8}
+.primary-btn:disabled{opacity:.4;cursor:not-allowed}
+.link-btn{background:none;border:none;color:var(--text-info);font-size:13px;cursor:pointer;padding:0;text-decoration:underline}
+.center{text-align:center;margin-top:1rem}
+.error-msg{font-size:13px;color:var(--text-danger);background:var(--bg-danger);border-radius:var(--radius-md);padding:8px 12px;margin-bottom:1rem;display:none}
+.success-msg{font-size:13px;color:var(--text-success);background:var(--bg-success);border-radius:var(--radius-md);padding:8px 12px;margin-bottom:1rem;display:none}
+.pending-box{text-align:center;padding:2rem 1rem}
+.pending-icon{font-size:40px;margin-bottom:12px}
+.pending-box h2{font-size:18px;font-weight:500;margin-bottom:8px}
+.pending-box p{font-size:14px;color:var(--text-secondary);line-height:1.6}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:0.5px solid var(--border-tertiary)}
+.topbar img{height:26px;object-fit:contain}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--bg-info);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--text-info)}
+.logout-btn{font-size:12px;color:var(--text-secondary);background:none;border:0.5px solid var(--border-secondary);border-radius:var(--radius-md);padding:5px 10px;cursor:pointer}
+.lang-mini{display:flex;background:var(--bg-secondary);border-radius:99px;padding:2px;gap:2px}
+.lang-mini button{padding:3px 9px;border:none;background:transparent;border-radius:99px;font-size:11px;font-weight:500;color:var(--text-secondary);cursor:pointer}
+.lang-mini button.active{background:var(--bg-primary);color:var(--text-primary)}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--bg-primary);border-top:0.5px solid var(--border-tertiary);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+.nav-btn{flex:1;padding:10px 4px 8px;border:none;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--text-tertiary);font-weight:500}
+.nav-btn.active{color:var(--teal)}
+.nav-btn .nav-icon{font-size:22px;line-height:1}
+.main-content{padding:1rem 1rem 5rem}
+.tabs{display:flex;background:var(--bg-secondary);border-radius:var(--radius-lg);padding:4px;gap:4px;margin-bottom:1.25rem}
+.tab{flex:1;padding:9px;border:none;background:transparent;border-radius:var(--radius-md);font-size:13px;font-weight:500;color:var(--text-secondary);cursor:pointer}
+.tab.active{background:var(--bg-primary);color:var(--text-primary);border:0.5px solid var(--border-tertiary)}
+.panel{display:none}.panel.active{display:block}
+.upload-zone{border:1.5px dashed var(--border-secondary);border-radius:var(--radius-lg);padding:1.5rem 1rem;text-align:center;cursor:pointer;margin-bottom:1rem;background:var(--bg-primary)}
+.upload-zone:active{background:var(--bg-secondary)}
+.upload-zone .uz-icon{font-size:28px;margin-bottom:6px}
+.upload-zone p{font-size:14px;color:var(--text-secondary)}
+.upload-zone small{font-size:12px;color:var(--text-tertiary)}
+.preview-wrap{margin-bottom:1rem;position:relative;display:none}
+.preview-wrap img,.preview-wrap video{width:100%;max-height:220px;object-fit:contain;border-radius:var(--radius-lg);border:0.5px solid var(--border-tertiary)}
+.rm-btn{position:absolute;top:8px;right:8px;padding:4px 10px;font-size:12px;background:rgba(0,0,0,0.55);color:#fff;border:none;border-radius:var(--radius-md);cursor:pointer}
+.cam-row{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
+.cam-btn{flex:1;padding:10px 8px;font-size:13px;border:0.5px solid var(--border-secondary);background:var(--bg-primary);color:var(--text-primary);border-radius:var(--radius-md);cursor:pointer;min-width:90px}
+.hint-input{width:100%;padding:10px 12px;border:0.5px solid var(--border-secondary);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-primary);font-size:14px;margin-bottom:1rem;outline:none}
+.notice{font-size:12px;color:var(--text-tertiary);background:var(--bg-secondary);border-radius:var(--radius-md);padding:8px 12px;margin-bottom:1rem;line-height:1.5}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem}
+.stat-card{background:var(--bg-secondary);border-radius:var(--radius-md);padding:10px 12px}
+.s-label{font-size:11px;color:var(--text-secondary);margin-bottom:3px}
+.s-val{font-size:17px;font-weight:500}
+.s-unit{font-size:11px;color:var(--text-secondary);margin-left:2px}
+.info-card{background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:.875rem 1rem;margin-bottom:.625rem}
+.info-card h3{font-size:13px;font-weight:500;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.info-card p{font-size:13px;color:var(--text-secondary);line-height:1.6}
+.tag-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.tag{font-size:11px;padding:2px 9px;border-radius:99px;background:var(--bg-secondary);color:var(--text-secondary);border:0.5px solid var(--border-tertiary)}
+.tag.good{background:#EAF3DE;color:#27500A;border-color:#97C459}
+.tag.warn{background:#FAEEDA;color:#633806;border-color:#EF9F27}
+.tag.bad{background:#FCEBEB;color:#791F1F;border-color:#F09595}
+.score-bar{height:7px;border-radius:99px;background:var(--bg-secondary);margin:6px 0;overflow:hidden}
+.score-fill{height:100%;border-radius:99px;transition:width .6s}
+.analyze-btn{width:100%;padding:13px;background:var(--text-primary);color:var(--bg-primary);border:none;border-radius:var(--radius-lg);font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
+.analyze-btn:disabled{opacity:.4}
+.result-section{margin-top:1.25rem;display:none}
+.field-lbl{font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px}
+.divider{height:0.5px;background:var(--border-tertiary);margin:1rem 0}
+.dur-row{display:flex;gap:8px;align-items:center;margin-bottom:1rem}
+.dur-row label{font-size:13px;color:var(--text-secondary);white-space:nowrap}
+.dur-row input[type=range]{flex:1;accent-color:var(--teal)}
+.dur-row span{font-size:13px;font-weight:500;min-width:52px;text-align:right}
+.voice-btn{width:100%;padding:12px;border-radius:var(--radius-lg);font-size:14px;font-weight:500;cursor:pointer;border:1.5px solid var(--border-secondary);background:var(--bg-primary);color:var(--text-primary);display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:.875rem}
+.voice-btn.recording{border-color:#E24B4A;color:#791F1F;background:#FCEBEB}
+.voice-transcript{font-size:13px;color:var(--text-secondary);background:var(--bg-secondary);border-radius:var(--radius-md);padding:9px 11px;min-height:40px;margin-bottom:.875rem;line-height:1.6}
+video.live{width:100%;border-radius:var(--radius-lg);border:0.5px solid var(--border-tertiary);display:none;margin-bottom:8px}
+.timer-display{font-size:24px;font-weight:500;text-align:center;padding:10px 0;letter-spacing:2px}
+.rec-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#E24B4A;margin-right:5px;animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.loading-dots{display:inline-flex;gap:4px;align-items:center}
+.loading-dots span{width:5px;height:5px;border-radius:50%;background:currentColor;animation:dot .8s infinite}
+.loading-dots span:nth-child(2){animation-delay:.2s}
+.loading-dots span:nth-child(3){animation-delay:.4s}
+@keyframes dot{0%,80%,100%{opacity:.2}40%{opacity:1}}
+.no-key-notice{background:var(--bg-warning);border-radius:var(--radius-md);padding:10px 14px;font-size:13px;color:var(--text-warning);margin-bottom:1rem;display:none}
+.diary-section-title{font-size:13px;font-weight:600;color:var(--text-secondary);margin:1rem 0 .625rem}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:1rem}
+.cal-header{font-size:11px;color:var(--text-tertiary);text-align:center;padding:4px 0;font-weight:500}
+.cal-day{aspect-ratio:1;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;position:relative;background:var(--bg-primary);border:0.5px solid var(--border-tertiary);color:var(--text-secondary)}
+.cal-day.today{border-color:var(--teal);color:var(--teal);font-weight:700}
+.cal-day.has-entry{background:var(--bg-success)}
+.cal-day.selected{background:var(--teal);color:#fff;border-color:var(--teal)}
+.cal-day.empty{background:transparent;border-color:transparent;cursor:default}
+.cal-dot{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--teal)}
+.diary-list{display:flex;flex-direction:column;gap:8px}
+.diary-entry{background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:.875rem 1rem}
+.diary-entry-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.diary-entry-type{font-size:12px;font-weight:600;color:var(--text-info);background:var(--bg-info);padding:2px 8px;border-radius:99px}
+.diary-entry-time{font-size:11px;color:var(--text-tertiary)}
+.diary-entry-name{font-size:14px;font-weight:500;margin-bottom:4px}
+.diary-entry-stats{display:flex;gap:10px;flex-wrap:wrap}
+.diary-stat{font-size:12px;color:var(--text-secondary)}
+.diary-stat strong{color:var(--text-primary);font-weight:600}
+.diary-empty{text-align:center;padding:2.5rem 1rem;color:var(--text-tertiary);font-size:14px}
+.month-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem}
+.month-nav button{padding:6px 12px;border:0.5px solid var(--border-secondary);background:var(--bg-primary);color:var(--text-primary);border-radius:var(--radius-md);cursor:pointer;font-size:13px}
+.month-nav span{font-size:14px;font-weight:600}
+.section-title{font-size:13px;font-weight:500;color:var(--text-secondary);margin-bottom:10px}
+.admin-user-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border-tertiary)}
+.admin-user-row:last-child{border-bottom:none}
+.admin-user-info{display:flex;align-items:center;gap:10px}
+.admin-av{width:32px;height:32px;border-radius:50%;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500}
+.admin-name{font-size:14px;font-weight:500}
+.admin-meta{font-size:12px;color:var(--text-tertiary)}
+.badge{font-size:11px;padding:2px 8px;border-radius:99px;font-weight:500}
+.badge.pending{background:#FAEEDA;color:#633806}
+.badge.approved{background:#EAF3DE;color:#27500A}
+.badge.rejected{background:#FCEBEB;color:#791F1F}
+.admin-actions{display:flex;gap:6px}
+.approve-btn{font-size:12px;padding:5px 12px;border:none;background:#EAF3DE;color:#27500A;border-radius:var(--radius-md);cursor:pointer;font-weight:500}
+.reject-btn{font-size:12px;padding:5px 12px;border:none;background:#FCEBEB;color:#791F1F;border-radius:var(--radius-md);cursor:pointer;font-weight:500}
+.expiry-btn{font-size:12px;padding:5px 10px;border:0.5px solid var(--border-secondary);background:var(--bg-primary);color:var(--text-secondary);border-radius:var(--radius-md);cursor:pointer}
+.diary-btn{font-size:12px;padding:5px 10px;border:0.5px solid var(--border-secondary);background:var(--bg-primary);color:var(--text-info);border-radius:var(--radius-md);cursor:pointer}
+.reset-btn{font-size:12px;padding:5px 10px;border:0.5px solid var(--border-secondary);background:var(--bg-primary);color:var(--text-warning);border-radius:var(--radius-md);cursor:pointer}
+.expired-badge{font-size:11px;padding:2px 8px;border-radius:99px;background:#FCEBEB;color:#791F1F;font-weight:500;margin-left:6px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal-sheet{background:var(--bg-primary);border-radius:var(--radius-lg) var(--radius-lg) 0 0;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:1.25rem}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:0.5px solid var(--border-tertiary)}
+.modal-header h3{font-size:16px;font-weight:600}
+.modal-close{font-size:20px;background:none;border:none;cursor:pointer;color:var(--text-secondary);padding:0 4px}
+.diary-tabs{display:flex;gap:8px;margin-bottom:1rem}
+.diary-tab-btn{flex:1;padding:8px;border:0.5px solid var(--border-secondary);background:var(--bg-secondary);border-radius:var(--radius-md);font-size:13px;font-weight:500;cursor:pointer;color:var(--text-secondary)}
+.diary-tab-btn.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+.admin-diary-entry{background:var(--bg-secondary);border-radius:var(--radius-md);padding:10px 12px;margin-bottom:8px}
+.admin-diary-date{font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:6px}
+.admin-diary-item{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--border-tertiary)}
+.admin-diary-item:last-child{border-bottom:none}
+.admin-diary-name{font-size:13px;font-weight:500}
+.admin-diary-stats{font-size:12px;color:var(--text-secondary)}
+.empty-state{text-align:center;padding:2rem;color:var(--text-tertiary);font-size:14px}
+.pw-strength{height:4px;border-radius:99px;margin-top:4px;background:var(--bg-secondary)}
+.key-section{background:var(--bg-secondary);border-radius:var(--radius-lg);padding:1rem;margin-bottom:1rem}
+.key-row{display:flex;gap:8px;align-items:center}
+.key-row input{flex:1;padding:9px 12px;border:0.5px solid var(--border-secondary);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-primary);font-size:13px;font-family:monospace;outline:none}
+.key-row button{padding:9px 14px;font-size:13px;border:none;background:var(--teal);color:#fff;border-radius:var(--radius-md);cursor:pointer;font-weight:500}
+.key-badge{display:none;align-items:center;gap:6px;font-size:12px;margin-top:6px;color:var(--text-success)}
+.save-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.save-overlay.show{display:flex}
+.save-sheet{background:var(--bg-primary);border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:1.5rem 1.25rem 2rem;width:100%;max-width:480px}
+.save-sheet h3{font-size:16px;font-weight:600;margin-bottom:6px}
+.save-sheet p{font-size:13px;color:var(--text-secondary);margin-bottom:1.25rem;line-height:1.5}
+.save-sheet-btns{display:flex;gap:10px}
+.save-yes{flex:1;padding:12px;background:var(--teal);color:#fff;border:none;border-radius:var(--radius-lg);font-size:14px;font-weight:600;cursor:pointer}
+.save-no{flex:1;padding:12px;background:var(--bg-secondary);color:var(--text-secondary);border:none;border-radius:var(--radius-lg);font-size:14px;font-weight:500;cursor:pointer}
+.spinner{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:300;align-items:center;justify-content:center}
+.spinner.show{display:flex}
+.spinner-inner{width:40px;height:40px;border:3px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="screen full active" id="screen-intro">
+<div class="intro-wrap">
+  <div class="intro-hero">
+    <img id="intro-logo" src="" alt="Niva">
+    <h1 id="i-title">健康 AI 助手</h1>
+    <p id="i-sub">数据配合 — 使你更精准有效</p>
+  </div>
+  <div class="intro-features" id="i-features"></div>
+  <div class="intro-footer">
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('zh',this)">中文</button>
+      <button class="lang-btn" onclick="setLang('en',this)">English</button>
+    </div>
+    <button class="start-btn" id="i-start-btn" onclick="goFromIntro()">开始使用</button>
+  </div>
+</div>
+</div>
+
+<div class="screen" id="screen-login">
+  <div class="logo-wrap">
+    <img id="login-logo" src="" alt="Niva">
+    <h1 id="l-title">健康 AI 助手</h1>
+    <p id="l-sub">数据配合 — 使你更精准有效</p>
+  </div>
+  <div class="card">
+    <div class="error-msg" id="login-err"></div>
+    <div class="field"><label id="l-un">用户名</label><input type="text" id="login-user" autocomplete="username"></div>
+    <div class="field"><label id="l-pw">密码</label><input type="password" id="login-pass" autocomplete="current-password"></div>
+    <button class="primary-btn" onclick="doLogin()" id="l-btn">登入</button>
+    <div class="center"><button class="link-btn" onclick="showScreen('screen-register')" id="l-reg-link">没有账号？立即注册</button></div>
+  </div>
+</div>
+
+<div class="screen" id="screen-register">
+  <div class="logo-wrap">
+    <img id="reg-logo" src="" alt="Niva">
+    <h1 id="r-title">创建账号</h1>
+    <p id="r-sub">注册后等待管理员审批即可使用</p>
+  </div>
+  <div class="card">
+    <div class="error-msg" id="reg-err"></div>
+    <div class="success-msg" id="reg-ok"></div>
+    <div class="field"><label id="r-un">用户名</label><input type="text" id="reg-user" autocomplete="username" oninput="checkReg()"><p class="hint" id="r-un-hint">只允许英文、数字、底线</p></div>
+    <div class="field"><label id="r-name">显示名称</label><input type="text" id="reg-name" oninput="checkReg()"></div>
+    <div class="field"><label id="r-pw">密码</label><input type="password" id="reg-pass" autocomplete="new-password" oninput="checkReg();updateStr()"><div class="pw-strength" id="pw-str"></div></div>
+    <div class="field"><label id="r-pw2">确认密码</label><input type="password" id="reg-pass2" autocomplete="new-password" oninput="checkReg()"></div>
+    <div class="field">
+      <label id="r-dealer-lbl">Dealer Code <span style="color:var(--text-danger)">*</span></label>
+      <input type="text" id="reg-dealer-code" placeholder="向你的经销商索取" oninput="checkReg()" style="text-transform:uppercase" autocomplete="off">
+      <p class="hint" id="r-dealer-hint">必须填写有效的 Dealer Code 才能注册</p>
+    </div>
+    <button class="primary-btn" id="reg-btn" onclick="doRegister()" disabled>提交注册</button>
+    <div class="center"><button class="link-btn" onclick="showScreen('screen-login')" id="r-login-link">已有账号？返回登入</button></div>
+  </div>
+</div>
+
+<div class="screen" id="screen-pending">
+  <div class="logo-wrap"><img id="pend-logo" src="" alt="Niva"></div>
+  <div class="card">
+    <div class="pending-box">
+      <div class="pending-icon">⏳</div>
+      <h2 id="pend-title">等待管理员审批</h2>
+      <p id="pending-msg">你的账号已提交，请等待管理员审批后再登入。</p>
+      <button class="primary-btn" style="margin-top:1.5rem;max-width:200px;margin-left:auto;margin-right:auto" onclick="showScreen('screen-login')" id="pend-btn">返回登入</button>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="screen-admin">
+  <div style="padding:1rem 1rem 0">
+  <div class="topbar">
+    <img id="admin-logo" src="" alt="Niva">
+    <div class="topbar-right">
+      <div class="lang-mini" id="admin-lang-mini"></div>
+      <div class="avatar">AD</div>
+      <button class="logout-btn" onclick="doLogout()" id="ad-logout">登出</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="section-title" id="ad-key-title">🔑 Gemini API Key</div>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:10px" id="ad-key-desc">设置后所有已批准的用户无需填写即可直接使用 AI 功能。</p>
+    <div class="key-section">
+      <div class="key-row">
+        <input type="password" id="admin-apikey" placeholder="AIza..." autocomplete="off">
+        <button onclick="saveAdminKey()" id="ad-key-save">保存</button>
+      </div>
+      <div class="key-badge" id="key-badge">✓ <span id="ad-key-set">Key 已设置</span> <button onclick="clearAdminKey()" style="font-size:11px;padding:2px 8px;border:0.5px solid var(--border-secondary);background:none;color:var(--text-danger);border-radius:99px;cursor:pointer" id="ad-key-del">删除</button></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="section-title" id="ad-pend-title">⏳ 待审批用户</div>
+    <div id="pending-list"><div class="empty-state" id="ad-no-pend">暂无待审批用户</div></div>
+  </div>
+  <div class="card">
+    <div class="section-title" id="ad-all-title">👥 所有用户</div>
+    <div id="all-users-list"><div class="empty-state" id="ad-no-users">暂无注册用户</div></div>
+  </div>
+  </div>
+</div>
+
+<!-- ═══ DEALER CONSOLE ═══ -->
+<div class="screen" id="screen-dealer">
+  <div style="padding:1rem 1rem 5rem">
+  <div class="topbar">
+    <img id="dealer-logo" src="" alt="Niva">
+    <div class="topbar-right">
+      <div class="lang-mini" id="dealer-lang-mini"></div>
+      <div class="avatar" style="background:var(--bg-warning);color:var(--text-warning)" id="dealer-avatar">D</div>
+      <button class="logout-btn" onclick="doLogout()" id="dealer-logout">登出</button>
+    </div>
+  </div>
+
+  <!-- Dealer Code Card -->
+  <div style="background:linear-gradient(135deg,#854F0B,#633806);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem;color:#fff">
+    <div style="font-size:12px;opacity:.8;margin-bottom:4px" id="dealer-code-lbl">我的 Dealer Code</div>
+    <div style="font-size:28px;font-weight:800;letter-spacing:3px" id="dealer-code-display">——</div>
+    <div style="font-size:12px;opacity:.75;margin-top:6px" id="dealer-code-desc">用户注册时需填写此 Code 才能关联到你</div>
+  </div>
+
+  <!-- Stats -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:1rem">
+    <div style="background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:12px;text-align:center">
+      <div style="font-size:22px;font-weight:700;color:var(--text-warning)" id="dealer-stat-pending">0</div>
+      <div style="font-size:11px;color:var(--text-tertiary)" id="dealer-stat-pending-lbl">待审批</div>
+    </div>
+    <div style="background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:12px;text-align:center">
+      <div style="font-size:22px;font-weight:700;color:var(--text-success)" id="dealer-stat-approved">0</div>
+      <div style="font-size:11px;color:var(--text-tertiary)" id="dealer-stat-approved-lbl">已批准</div>
+    </div>
+    <div style="background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:12px;text-align:center">
+      <div style="font-size:22px;font-weight:700;color:var(--text-primary)" id="dealer-stat-total">0</div>
+      <div style="font-size:11px;color:var(--text-tertiary)" id="dealer-stat-total-lbl">总用户</div>
+    </div>
+  </div>
+
+  <!-- Pending -->
+  <div class="card">
+    <div class="section-title" id="dealer-pend-title">⏳ 待审批用户</div>
+    <div id="dealer-pending-list"><div class="empty-state" id="dealer-no-pend">暂无待审批用户</div></div>
+  </div>
+
+  <!-- All Users -->
+  <div class="card">
+    <div class="section-title" id="dealer-all-title">👥 我的用户</div>
+    <div id="dealer-all-list"><div class="empty-state" id="dealer-no-users">暂无用户</div></div>
+  </div>
+  </div>
+</div>
+
+<div class="screen" id="screen-main">
+  <div class="main-content">
+    <div class="topbar">
+      <img id="main-logo" src="" alt="Niva">
+      <div class="topbar-right">
+        <div class="lang-mini" id="main-lang-mini"></div>
+        <div class="avatar" id="main-avatar">U</div>
+        <button class="logout-btn" onclick="doLogout()" id="m-logout">登出</button>
+      </div>
+    </div>
+    <div class="no-key-notice" id="no-key-notice">⚠️ <span id="no-key-msg">管理员尚未设置 Gemini API Key，请联系管理员。</span></div>
+    <div id="tab-ai">
+      <div class="tabs">
+        <button class="tab active" onclick="switchAiTab('food',this)" id="tab-food-btn">🍽 食物分析</button>
+        <button class="tab" onclick="switchAiTab('sport',this)" id="tab-sport-btn">🏃 运动分析</button>
+      </div>
+      <div class="panel active" id="panel-food">
+        <div class="upload-zone" onclick="document.getElementById('food-file').click()" ondragover="ev(event)" ondrop="dropFood(event)">
+          <div class="uz-icon">📷</div><p id="food-upload-txt">点击上传或拖拽食物图片</p><small>JPG / PNG / WEBP</small>
+        </div>
+        <input type="file" id="food-file" accept="image/*" style="display:none" onchange="loadFoodFile(this)">
+        <div class="cam-row">
+          <button class="cam-btn" onclick="startFoodCam()" id="food-cam-btn">📸 拍照</button>
+          <button class="cam-btn" onclick="snapFood()" id="food-snap" style="display:none">✓ <span id="food-confirm-txt">确认拍摄</span></button>
+          <button class="cam-btn" onclick="stopFoodCam()" id="food-stop" style="display:none">✕</button>
+        </div>
+        <video class="live" id="food-video" autoplay playsinline></video>
+        <canvas id="food-canvas" style="display:none"></canvas>
+        <div class="preview-wrap" id="food-preview"><img id="food-img" src="" alt=""><button class="rm-btn" onclick="clearFood()">✕</button></div>
+        <label class="field-lbl" id="food-hint-lbl">✏️ 补充说明（可选）</label>
+        <input class="hint-input" type="text" id="food-hint">
+        <button class="analyze-btn" id="food-btn" onclick="analyzeFood()" disabled>✨ <span id="food-btn-text">分析食物</span></button>
+        <div class="result-section" id="food-result"><div class="stat-grid" id="food-stats"></div><div id="food-cards"></div></div>
+      </div>
+      <div class="panel" id="panel-sport">
+        <div class="notice" id="sport-notice">ℹ️ 建议视频 <strong>30 秒内</strong>，可用语音或文字描述运动内容辅助分析。</div>
+        <div class="upload-zone" onclick="document.getElementById('sport-file').click()" ondragover="ev(event)" ondrop="dropSport(event)">
+          <div class="uz-icon">🎥</div><p id="sport-upload-txt">点击上传或拖拽运动视频</p><small id="sport-upload-sm">MP4 / MOV / WEBM · 建议 30 秒内</small>
+        </div>
+        <input type="file" id="sport-file" accept="video/*" style="display:none" onchange="loadSportFile(this)">
+        <div class="cam-row">
+          <button class="cam-btn" onclick="startSportCam()" id="sport-cam-btn">🎬 录制</button>
+          <button class="cam-btn" onclick="stopSportRec()" id="sport-stop-rec" style="display:none">⏹ <span id="sport-stop-txt">停止</span></button>
+          <button class="cam-btn" onclick="stopSportCam()" id="sport-cancel" style="display:none">✕</button>
+        </div>
+        <div class="timer-display" id="sport-timer" style="display:none">00:00</div>
+        <video class="live" id="sport-video" autoplay playsinline muted></video>
+        <canvas id="sport-canvas" style="display:none"></canvas>
+        <div class="preview-wrap" id="sport-preview"><video id="sport-preview-vid" controls></video><button class="rm-btn" onclick="clearSport()">✕</button></div>
+        <div class="divider"></div>
+        <label class="field-lbl" id="sport-voice-lbl">🎤 语音描述运动</label>
+        <button class="voice-btn" id="voice-btn" onclick="toggleVoice()">🎤 <span id="voice-btn-text">点击开始语音输入</span></button>
+        <div class="voice-transcript" id="voice-transcript"></div>
+        <label class="field-lbl" id="sport-text-lbl">✏️ 或用文字描述</label>
+        <input class="hint-input" type="text" id="sport-hint">
+        <label class="field-lbl" id="sport-dur-lbl">⏱ 运动时间</label>
+        <div class="dur-row">
+          <label>1</label>
+          <input type="range" id="sport-dur" min="1" max="120" value="20" step="1" oninput="document.getElementById('dur-val').textContent=this.value+' min'">
+          <span id="dur-val">20 min</span>
+        </div>
+        <button class="analyze-btn" id="sport-btn" onclick="analyzeSport()">✨ <span id="sport-btn-text">分析运动</span></button>
+        <div class="result-section" id="sport-result"><div class="stat-grid" id="sport-stats"></div><div id="sport-cards"></div></div>
+      </div>
+    </div>
+    <!-- BMI Tab -->
+    <div id="tab-bmi" style="display:none">
+
+      <!-- BMI Calculator -->
+      <div style="background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem">
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px" id="bmi-calc-title">⚖️ BMI 计算器</div>
+
+        <!-- Gender -->
+        <div style="margin-bottom:12px">
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px" id="bmi-gender-lbl">性别</div>
+          <div style="display:flex;gap:8px">
+            <button class="gender-btn active" id="gender-male" onclick="setGender('male',this)" style="flex:1;padding:10px;border:1.5px solid var(--teal);background:var(--bg-info);color:var(--teal);border-radius:var(--radius-lg);font-size:14px;font-weight:500;cursor:pointer">♂ <span id="lbl-male">男</span></button>
+            <button class="gender-btn" id="gender-female" onclick="setGender('female',this)" style="flex:1;padding:10px;border:0.5px solid var(--border-secondary);background:var(--bg-primary);color:var(--text-secondary);border-radius:var(--radius-lg);font-size:14px;font-weight:500;cursor:pointer">♀ <span id="lbl-female">女</span></button>
+          </div>
+        </div>
+
+        <!-- Age -->
+        <div style="margin-bottom:12px">
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px" id="bmi-age-lbl">年龄</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="range" id="age-slider" min="10" max="100" value="30" step="1" style="flex:1;accent-color:var(--teal)" oninput="syncBmi('age')">
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="number" id="age-input" min="10" max="100" value="30" style="width:60px;padding:7px 8px;border:0.5px solid var(--border-secondary);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-primary);font-size:14px;text-align:center;outline:none" oninput="syncBmiInput('age')">
+              <span style="font-size:13px;color:var(--text-secondary)" id="bmi-age-unit">岁</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Unit toggle -->
+        <div style="display:flex;background:var(--bg-secondary);border-radius:var(--radius-lg);padding:3px;gap:3px;margin-bottom:12px">
+          <button class="unit-btn active" id="unit-metric" onclick="setUnit('metric',this)" style="flex:1;padding:7px;border:none;background:var(--bg-primary);border-radius:var(--radius-md);font-size:12px;font-weight:500;cursor:pointer;border:0.5px solid var(--border-tertiary)" id="lbl-metric">公制 cm / kg</button>
+          <button class="unit-btn" id="unit-imperial" onclick="setUnit('imperial',this)" style="flex:1;padding:7px;border:none;background:transparent;border-radius:var(--radius-md);font-size:12px;font-weight:500;cursor:pointer;color:var(--text-secondary)">英制 ft·in / lb</button>
+        </div>
+
+        <!-- Height -->
+        <div style="margin-bottom:12px" id="height-metric-wrap">
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px" id="bmi-height-lbl">身高</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="range" id="height-slider" min="100" max="220" value="165" step="1" style="flex:1;accent-color:var(--teal)" oninput="syncBmi('height')">
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="number" id="height-input" min="100" max="220" value="165" style="width:60px;padding:7px 8px;border:0.5px solid var(--border-secondary);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-primary);font-size:14px;text-align:center;outline:none" oninput="syncBmiInput('height')">
+              <span style="font-size:13px;color:var(--text-secondary)">cm</span>
+            </div>
+          </div>
+        </div>
+        <div style="margin-bottom:12px;display:none" id="height-imperial-wrap">
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px" id="bmi-height-imp-lbl">Height</div>
+          <div style="display:flex;gap:10px">
+            <div style="flex:1;display:flex;align-items:center;gap:6px">
+              <input type="number" id="height-ft" min="3" max="8" value="5" style="width:55px;padding:7px 8px;border:0.5px solid var(--border-secondary);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-primary);font-size:14px;text-align:center;outline:none">
+              <span style="font-size:13px;color:var(--text-secondary)">ft</span>
+            </div>
+            <div style="flex:1;display:flex;align-items:center;gap:6px">
+              <input type="number" id="height-in" min="0" max="11" value="5" style="width:55px;padding:7px 8px;border:0.5px solid var(--border-secondary);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-primary);font-size:14px;text-align:center;outline:none">
+              <span style="font-size:13px;color:var(--text-secondary)">in</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Weight -->
+        <div style="margin-bottom:16px" id="weight-metric-wrap">
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px" id="bmi-weight-lbl">体重</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="range" id="weight-slider" min="30" max="200" value="65" step="0.5" style="flex:1;accent-color:var(--teal)" oninput="syncBmi('weight')">
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="number" id="weight-input" min="30" max="200" value="65" step="0.5" style="width:65px;padding:7px 8px;border:0.5px solid var(--border-secondary);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-primary);font-size:14px;text-align:center;outline:none" oninput="syncBmiInput('weight')">
+              <span style="font-size:13px;color:var(--text-secondary)">kg</span>
+            </div>
+          </div>
+        </div>
+        <div style="margin-bottom:16px;display:none" id="weight-imperial-wrap">
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px" id="bmi-weight-imp-lbl">Weight</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="number" id="weight-lb" min="66" max="440" value="143" step="1" style="width:80px;padding:7px 8px;border:0.5px solid var(--border-secondary);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-primary);font-size:14px;text-align:center;outline:none">
+            <span style="font-size:13px;color:var(--text-secondary)">lb</span>
+          </div>
+        </div>
+
+        <button onclick="calcBmi()" style="width:100%;padding:13px;background:var(--teal);color:#fff;border:none;border-radius:var(--radius-lg);font-size:14px;font-weight:600;cursor:pointer" id="bmi-calc-btn">计算 BMI</button>
+      </div>
+
+      <!-- Activity Level -->
+      <div style="background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px" id="bmi-activity-title">🏃 活动量</div>
+        <div style="display:flex;flex-direction:column;gap:6px" id="bmi-activity-list"></div>
+      </div>
+
+      <!-- BMI Result -->
+      <div id="bmi-result" style="display:none;margin-bottom:1rem">
+
+        <!-- BMI Score Card -->
+        <div style="background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:.75rem">
+          <div style="display:flex;align-items:flex-end;gap:12px;margin-bottom:4px">
+            <div style="font-size:52px;font-weight:700;line-height:1" id="bmi-number">—</div>
+            <div style="font-size:16px;font-weight:600;padding-bottom:8px" id="bmi-category"></div>
+          </div>
+          <div style="height:10px;border-radius:99px;background:linear-gradient(to right,#85B7EB,#97C459,#EF9F27,#F09595,#E24B4A);margin:12px 0;position:relative">
+            <div id="bmi-marker" style="position:absolute;top:-5px;width:20px;height:20px;border-radius:50%;background:var(--text-primary);border:2px solid var(--bg-primary);transform:translateX(-50%);transition:left .5s;left:0%"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-tertiary);margin-bottom:12px">
+            <span id="bmi-lbl-under">偏轻</span><span id="bmi-lbl-normal">正常</span><span id="bmi-lbl-over">超重</span><span id="bmi-lbl-obese">肥胖</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+            <div style="background:var(--bg-success);border-radius:var(--radius-md);padding:10px;text-align:center">
+              <div style="font-size:11px;color:var(--text-success);margin-bottom:3px" id="bmi-ideal-lbl">理想体重范围</div>
+              <div style="font-size:14px;font-weight:600;color:var(--text-success)" id="bmi-ideal-range">—</div>
+            </div>
+            <div style="background:var(--bg-info);border-radius:var(--radius-md);padding:10px;text-align:center">
+              <div style="font-size:11px;color:var(--text-info);margin-bottom:3px" id="bmi-diff-lbl">距离理想体重</div>
+              <div style="font-size:14px;font-weight:600;color:var(--text-info)" id="bmi-diff">—</div>
+            </div>
+          </div>
+          <div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:10px 12px;font-size:13px;color:var(--text-secondary);line-height:1.6" id="bmi-advice"></div>
+        </div>
+
+        <!-- Metabolism Card -->
+        <div style="background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:.75rem">
+          <div style="font-size:13px;font-weight:600;margin-bottom:12px" id="bmi-meta-title">🔥 每日卡路里消耗</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+            <div style="background:linear-gradient(135deg,#1a6b8a,#0d4f68);border-radius:var(--radius-lg);padding:12px;text-align:center;color:#fff">
+              <div style="font-size:11px;opacity:.85;margin-bottom:4px" id="bmi-bmr-lbl">基础代谢率 BMR</div>
+              <div style="font-size:22px;font-weight:700" id="bmi-bmr-val">—</div>
+              <div style="font-size:11px;opacity:.85">kcal/天</div>
+            </div>
+            <div style="background:linear-gradient(135deg,#27500A,#3B6D11);border-radius:var(--radius-lg);padding:12px;text-align:center;color:#fff">
+              <div style="font-size:11px;opacity:.85;margin-bottom:4px" id="bmi-tdee-lbl">每日总消耗 TDEE</div>
+              <div style="font-size:22px;font-weight:700" id="bmi-tdee-val">—</div>
+              <div style="font-size:11px;opacity:.85">kcal/天</div>
+            </div>
+          </div>
+          <div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:10px 12px">
+            <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text-primary)" id="bmi-goal-cal-title">🎯 建议每日摄入</div>
+            <div id="bmi-goal-cals"></div>
+          </div>
+        </div>
+
+        <!-- Water Card -->
+        <div style="background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:.75rem">
+          <div style="font-size:13px;font-weight:600;margin-bottom:12px" id="bmi-water-title">💧 每日建议饮水量</div>
+          <div style="display:flex;align-items:center;gap:16px;margin-bottom:10px">
+            <div style="font-size:48px;font-weight:700;color:#2980b9" id="bmi-water-val">—</div>
+            <div>
+              <div style="font-size:14px;font-weight:500" id="bmi-water-unit">升 / 天</div>
+              <div style="font-size:12px;color:var(--text-secondary);margin-top:2px" id="bmi-water-glasses">= — 杯 (250ml)</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px" id="bmi-water-cups"></div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.5" id="bmi-water-tips"></div>
+        </div>
+
+      </div>
+
+      <!-- Daily Weight Log -->
+      <div style="background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem">
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px" id="weight-log-title">📈 每日体重记录</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <input type="number" id="weight-log-input" step="0.1" min="20" max="300" placeholder="65.0" style="flex:1;padding:10px 12px;border:0.5px solid var(--border-secondary);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-primary);font-size:16px;outline:none">
+          <span style="display:flex;align-items:center;font-size:13px;color:var(--text-secondary)" id="weight-log-unit">kg</span>
+          <button onclick="logWeight()" style="padding:10px 16px;background:var(--teal);color:#fff;border:none;border-radius:var(--radius-md);font-size:13px;font-weight:600;cursor:pointer" id="weight-log-btn">记录</button>
+        </div>
+        <div id="weight-log-list"><div class="empty-state" style="padding:1.5rem" id="weight-no-data">暂无记录</div></div>
+      </div>
+
+    </div>
+
+    <!-- Recipe Tab -->
+    <div id="tab-recipe" style="display:none">
+
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,#1a6b8a,#0d4f68);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem;color:#fff">
+        <div style="font-size:16px;font-weight:700;margin-bottom:4px" id="recipe-hero-title">🍱 智能食谱生成</div>
+        <div style="font-size:12px;opacity:.85" id="recipe-hero-sub">马来西亚本地健康外卖参考 · AI 定制推荐</div>
+      </div>
+
+      <!-- Goal -->
+      <div style="background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px" id="recipe-goal-title">🎯 健康目标</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="recipe-goals"></div>
+      </div>
+
+      <!-- Category -->
+      <div style="background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px" id="recipe-cat-title">🏪 外卖分类（可多选）</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="recipe-cats"></div>
+      </div>
+
+      <!-- Dietary -->
+      <div style="background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px" id="recipe-diet-title">🥗 饮食限制（可多选）</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px" id="recipe-diets"></div>
+      </div>
+
+      <!-- Calorie Target -->
+      <div style="background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px" id="recipe-cal-title">🔥 每日卡路里目标</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <input type="range" id="recipe-cal-slider" min="1000" max="3000" value="1800" step="50" style="flex:1;accent-color:var(--teal)" oninput="id('recipe-cal-val').textContent=this.value+' kcal'">
+          <span style="font-size:14px;font-weight:600;min-width:80px;text-align:right" id="recipe-cal-val">1800 kcal</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-tertiary);margin-top:4px">
+          <span>1000</span><span>2000</span><span>3000 kcal</span>
+        </div>
+      </div>
+
+      <!-- Meals -->
+      <div style="background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px" id="recipe-meal-title">🕐 餐次</div>
+        <div style="display:flex;gap:8px" id="recipe-meals"></div>
+      </div>
+
+      <!-- Generate Button -->
+      <button onclick="generateRecipe()" style="width:100%;padding:14px;background:var(--teal);color:#fff;border:none;border-radius:var(--radius-lg);font-size:15px;font-weight:700;cursor:pointer;margin-bottom:1rem" id="recipe-gen-btn">✨ 生成食谱</button>
+
+      <!-- Result -->
+      <div id="recipe-result" style="display:none"></div>
+
+    </div>
+
+    <div id="tab-diary" style="display:none">      <div class="month-nav">
+        <button onclick="changeMonth(-1)">‹</button>
+        <span id="month-label"></span>
+        <button onclick="changeMonth(1)">›</button>
+      </div>
+      <div class="calendar-grid" id="calendar-grid"></div>
+      <div class="diary-section-title" id="diary-day-title">📋 今天的记录</div>
+      <div class="diary-list" id="diary-list"></div>
+    </div>
+
+    <div id="tab-about" style="display:none">
+      <!-- Hero -->
+      <div style="background:linear-gradient(160deg,#1a6b8a 0%,#0d4f68 100%);border-radius:var(--radius-lg);padding:2rem 1.5rem;text-align:center;color:#fff;margin-bottom:1rem">
+        <img src="" alt="Niva" id="about-logo" style="height:44px;object-fit:contain;display:block;margin:0 auto 12px;filter:brightness(0) invert(1)">
+        <div style="font-size:18px;font-weight:700;margin-bottom:6px" id="about-hero-title">数据配合 — 使你更精准有效</div>
+        <div style="font-size:13px;opacity:.85;line-height:1.6" id="about-hero-desc">研究显示，热量摄入过高与新陈代谢过低是现代人体重增加的主要原因。Niva 用 AI 帮你实时追踪每餐营养与每次运动，让健康管理更科学、更有效。</div>
+      </div>
+
+      <!-- Problem -->
+      <div style="background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text-primary)" id="about-prob-title">🔍 你是否面临这些问题？</div>
+        <div id="about-problems"></div>
+      </div>
+
+      <!-- Solution -->
+      <div style="background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text-primary)" id="about-sol-title">✨ Niva 如何帮助你</div>
+        <div id="about-solutions"></div>
+      </div>
+
+      <!-- Stats -->
+      <div style="background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text-primary)" id="about-stat-title">📊 健康数据告诉你</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" id="about-stats"></div>
+      </div>
+
+      <!-- Features -->
+      <div style="background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text-primary)" id="about-feat-title">🚀 核心功能</div>
+        <div id="about-features"></div>
+      </div>
+
+      <div style="text-align:center;padding:1rem 0 .5rem;font-size:12px;color:var(--text-tertiary)">Niva Health AI · v6.0</div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-btn active" onclick="switchMainTab('ai',this)"><span class="nav-icon">🤖</span><span id="nav-ai-lbl">AI 分析</span></button>
+    <button class="nav-btn" onclick="switchMainTab('bmi',this)"><span class="nav-icon">⚖️</span><span id="nav-bmi-lbl">BMI</span></button>
+    <button class="nav-btn" onclick="switchMainTab('recipe',this)"><span class="nav-icon">🍱</span><span id="nav-recipe-lbl">食谱</span></button>
+    <button class="nav-btn" onclick="switchMainTab('diary',this)"><span class="nav-icon">📔</span><span id="nav-diary-lbl">日记</span></button>
+    <button class="nav-btn" onclick="switchMainTab('about',this)"><span class="nav-icon">💡</span><span id="nav-about-lbl">关于</span></button>
+  </div>
+</div>
+
+</div>
+
+<!-- Expiry Modal -->
+<div class="modal-overlay" id="expiry-overlay" onclick="dismissModal('expiry-overlay',event)">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <h3 id="expiry-modal-title">📅 设置到期日</h3>
+      <button class="modal-close" onclick="closeModal('expiry-overlay')">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:1rem" id="expiry-modal-desc">设置用户账号到期日，到期后将自动禁止登入。</p>
+    <div class="field">
+      <label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px" id="expiry-label">到期日期</label>
+      <input type="date" id="expiry-date-input" style="width:100%;padding:10px 12px;border:0.5px solid var(--border-secondary);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-primary);font-size:15px;outline:none">
+    </div>
+    <div style="display:flex;gap:8px;margin-top:1rem">
+      <button onclick="clearExpiry()" style="flex:1;padding:12px;border:0.5px solid var(--border-secondary);background:var(--bg-secondary);color:var(--text-secondary);border-radius:var(--radius-lg);font-size:14px;cursor:pointer" id="expiry-clear-btn">清除到期日</button>
+      <button onclick="saveExpiry()" style="flex:1;padding:12px;background:var(--teal);color:#fff;border:none;border-radius:var(--radius-lg);font-size:14px;font-weight:600;cursor:pointer" id="expiry-save-btn">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- User Diary Modal -->
+<div class="modal-overlay" id="diary-modal-overlay" onclick="dismissModal('diary-modal-overlay',event)">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <h3 id="diary-modal-title">📔 用户日记</h3>
+      <button class="modal-close" onclick="closeModal('diary-modal-overlay')">✕</button>
+    </div>
+    <div class="diary-tabs">
+      <button class="diary-tab-btn active" onclick="switchDiaryView('food',this)" id="diary-food-btn">🍽 食物</button>
+      <button class="diary-tab-btn" onclick="switchDiaryView('sport',this)" id="diary-sport-btn">🏃 运动</button>
+      <button class="diary-tab-btn" onclick="switchDiaryView('weight',this)" id="diary-weight-btn">⚖️ 体重</button>
+    </div>
+    <div id="diary-modal-content"><div class="empty-state">加载中...</div></div>
+  </div>
+</div>
+
+<!-- Role Selector Modal (Admin approve) -->
+<div class="modal-overlay" id="role-overlay" onclick="dismissModal('role-overlay',event)">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <h3 id="role-modal-title">✅ 批准用户</h3>
+      <button class="modal-close" onclick="closeModal('role-overlay')">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:1rem" id="role-modal-desc">请选择此用户的角色：</p>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:1rem">
+      <button onclick="confirmApproveWithRole('user')" style="display:flex;align-items:center;gap:12px;padding:14px;border:1.5px solid var(--border-secondary);background:var(--bg-secondary);border-radius:var(--radius-lg);cursor:pointer;text-align:left">
+        <span style="font-size:28px">👤</span>
+        <div>
+          <div style="font-size:14px;font-weight:600" id="role-user-lbl">普通用户 (User)</div>
+          <div style="font-size:12px;color:var(--text-secondary)" id="role-user-desc">可使用 AI 分析、BMI、日记功能</div>
+        </div>
+      </button>
+      <button onclick="confirmApproveWithRole('dealer')" style="display:flex;align-items:center;gap:12px;padding:14px;border:1.5px solid var(--border-secondary);background:var(--bg-secondary);border-radius:var(--radius-lg);cursor:pointer;text-align:left">
+        <span style="font-size:28px">🏪</span>
+        <div>
+          <div style="font-size:14px;font-weight:600" id="role-dealer-lbl">经销商 (Dealer)</div>
+          <div style="font-size:12px;color:var(--text-secondary)" id="role-dealer-desc">拥有专属 Dealer Code，可管理和查看旗下用户</div>
+        </div>
+      </button>
+      <button onclick="confirmApproveWithRole('admin')" style="display:flex;align-items:center;gap:12px;padding:14px;border:1.5px solid #E24B4A;background:#FCEBEB;border-radius:var(--radius-lg);cursor:pointer;text-align:left">
+        <span style="font-size:28px">👑</span>
+        <div>
+          <div style="font-size:14px;font-weight:600;color:#791F1F" id="role-admin-lbl">管理员 (Admin)</div>
+          <div style="font-size:12px;color:#A32D2D" id="role-admin-desc">拥有完整管理权限，与 admin 账号相同权限</div>
+        </div>
+      </button>
+    </div>
+    <button onclick="closeModal('role-overlay')" style="width:100%;padding:11px;border:0.5px solid var(--border-secondary);background:var(--bg-secondary);color:var(--text-secondary);border-radius:var(--radius-lg);font-size:14px;cursor:pointer" id="role-cancel-btn">取消</button>
+  </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div class="modal-overlay" id="reset-overlay" onclick="dismissModal('reset-overlay',event)">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <h3 id="reset-modal-title">🔑 重置密码</h3>
+      <button class="modal-close" onclick="closeModal('reset-overlay')">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:1rem" id="reset-modal-desc">为用户设置新密码，用户下次登入时使用新密码。</p>
+    <div class="field">
+      <label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px" id="reset-pw-lbl">新密码</label>
+      <input type="password" id="reset-new-pw" placeholder="至少 6 个字符" style="width:100%;padding:10px 12px;border:0.5px solid var(--border-secondary);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-primary);font-size:15px;outline:none" autocomplete="new-password">
+    </div>
+    <div class="field">
+      <label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px" id="reset-pw2-lbl">确认新密码</label>
+      <input type="password" id="reset-new-pw2" placeholder="再次输入密码" style="width:100%;padding:10px 12px;border:0.5px solid var(--border-secondary);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-primary);font-size:15px;outline:none" autocomplete="new-password">
+    </div>
+    <div class="error-msg" id="reset-err"></div>
+    <div style="display:flex;gap:8px;margin-top:.5rem">
+      <button onclick="closeModal('reset-overlay')" style="flex:1;padding:12px;border:0.5px solid var(--border-secondary);background:var(--bg-secondary);color:var(--text-secondary);border-radius:var(--radius-lg);font-size:14px;cursor:pointer" id="reset-cancel-btn">取消</button>
+      <button onclick="confirmResetPassword()" style="flex:1;padding:12px;background:var(--teal);color:#fff;border:none;border-radius:var(--radius-lg);font-size:14px;font-weight:600;cursor:pointer" id="reset-confirm-btn">确认重置</button>
+    </div>
+  </div>
+</div>
+
+<div class="save-overlay" id="save-overlay" onclick="dismissSave(event)">
+  <div class="save-sheet">
+    <h3 id="save-title">💾 保存到日记？</h3>
+    <p id="save-desc">是否将此次分析结果保存到健康日记？</p>
+    <div class="save-sheet-btns">
+      <button class="save-yes" id="save-yes-btn" onclick="confirmSave()">✓ 保存</button>
+      <button class="save-no" id="save-no-btn" onclick="closeSave()">不保存</button>
+    </div>
+  </div>
+</div>
+<div class="spinner" id="spinner"><div class="spinner-inner"></div></div>
+
+<script>
+// ── Firebase Init ──
+const firebaseConfig = {
+  apiKey: "AIzaSyA-6mWVM2pudi4xLECElgvic2Yagai5qsc",
+  authDomain: "niva-health.firebaseapp.com",
+  projectId: "niva-health",
+  storageBucket: "niva-health.firebasestorage.app",
+  messagingSenderId: "516199202074",
+  appId: "1:516199202074:web:ca65a8b56197477d5540a3"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const ADMIN_USER='admin', ADMIN_PASS='admin123';
+const LOGO_SRC='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAAA7CAYAAACE0Y8MAAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAAjcElEQVR4nK2c2a9tyVnYf19VrWlP59y5B3e32z1cD+0Bt23iGWMbDwwGgg1BERGRUMJTeIjES5Q/IC+JhIQCIiICkjwkdlCAYIxtPOGpjcG0sQ3dntvt7r637z3DHtZQVV8eaq299zn3nNsXKyUt7bXXrlXDN0+15XOf+jwAqkpqgoggWEQEYwxdDIQQUAGMYoxBRVAVTJD+LQCPiIAEjAISEY39uCb9pi71F4MKtFFR+r4iiA6rUFQ1jQPp3b6pKsNydev58Zb6aRq37xdjXD8H0l7678Ozob+IEGM8cdyhybH5h+8nzX38NwAnIuuOw9ZPmiwBdvOrqCIoYPsnERELRMAQJX2mPoAKggAKCBIjKqDaP5F+rmFvqdsNiwchkua+ETQnA+k0wG0D5zgQT/r9CCy2+h5H3PH+R+F79D03vDSsbdjUsL0BaCKK9N9T30SFZsCqDKA2JGS41AfTzwiqwyIMBgiq/diC6PYC09waIRoZFjQsvec+PdJ3u21T9HGqOw1Yp90fB9ppz09C+HHi3uaI4d5tDxpTr81G5Oj3oa8diFpBpUeUpv4igmLX8BKztbFhEUNfTc9u3JgFDcc2ZohoWuXWXu0NoulGQJ8EmEG8xhhvANRp753Utt89jQOG++N9AdwgVAZgi0gvGgYRMbwA0MvkqFiEKIBsiQIxa2DpAPgtIJpeH6yBL9KjSnvxtcW2/fe4FmFmTQwDs8gJ1H8aAG4FkCe142PcKmJOW8/x9916w33niCbADy8luQPaU35MSBABhxBU2UgJRcVAL/kVQ4w9gIcFDJvSRNPGmJ4TlNhPFthQi+2V9fAualCJiJp+XRsknETJNwParSDopPGOz3fSWDcbe3tMF0O/QNOzbW+GqJH1d1EFTA+43gLp2chKJPYIU+lFBCBiEZQQkygxW+vZ6BOwsRcVJASSZkpiBBBxa9WtGvoRYq97lOPbvJmC3AbAccAdB/Lx5zcaA5vxTwO2qmKtvWG+IzrgyELMsUWwJaMVAopRTcpUe2XSAwQMRiNRDCKK6kadD6Jtrab7TRgViKGf3/SKegNWWa8tbG0g9HZXMnkHlJzG6qchYPvztHdOAvjxz+NjnHR/fNxtJBhjzImWgmpAiFibEcVgs4y28xTjMdFYJMuJxuB7QIfYrWV68B1WYpLvGrAGYuhAIzF4rLV478kyu1ZI1vUs6Rzee2KMuDxP6xBhtViQO5v8Cg0YUfLMYtAT1p6uQcHCxv6HZPsP10nKc/v34322x+u6DmvtDX2NMTjnyPP8CBK2+wxrNCKCmt4qYDOJTa5Y2gQG4xzW5TQ+UPvAvPUcrFraACYv8DGJrdFoRLtaQvD4dkXpDI6IxrB2apq2xYfA4XLF/mJJPhrTRmXRNAQxuLLCFiWtD1TjCV3wXLh0iRgjWWbpuo5JVXJwcMBJ7SRxsd2OW0onvXvae8cBetI72wTwXM3FY/P1xg709nvofC/VDWodnRrseEKel7RtjfcNDZasHNF1ni4qVVWRZxlF7gghAEpmBDUGRPAxUk4mGGMIReCw86y8ko+nrCK0rWc0GhGtYW++oO0iZrkizzKWBwc4a1gsFuzuzljV/ggQbma1HBdHN/Noj7eTzNTjNv3NdMtxcbV2xAa5Lxvbbm3nR4HJaEznI0EMWLh2cEBRjVmJo2kDVVExny85O5sSY83Va/vMJhWHh4cULikgkyV2jGLwqsyXK4xXsqIkczlPX3mG6XQHl1e0rcdNKjTLWB3uU+QjZuMZ9XKBU2G8s8POuOJ7TzxB4wNZXvbO4smAHKh0G0gnAfQ0pG0j4LgNvw3o05B7ktLeXodLJt3WgjeGEFahrRuiGNRa6q7lS1/9B/UKJi8JCKghNDV3XDwnr3v1w4jLyJzBiUFji0Vog2fVdgQgSsbKwzNPPUVWjRDraGMgVJGvfPXvOX/uIjs7O1z93neZHxyymB/oHRcvyr333MmVa9eYFhlN03Du4u3UywU+nqxkT7JQTjMZTwP6caCd1DeEcFNFfdp4w72DjWNje+BvTEaBoNjM0SLsHcz5sw9/lK99+1usOo91JXk2ZlRWnJmUev78Rbnn0nmu7V3jzKSg7cWDqmKznKwcsfKRb3/v6/obv/lbPLN3gGQOFUM5mjCbzfj1X/91eeY7T/IHv/cH+vXHHyMTuPeuO/Tnfvo9vP0tbxZtV+w/e4WyDCxbT5G5mwLtJFm//X3gkNMQcTPgnyTuTjNnT2suGZAwuF5Gt8JxveOlKuR5yc6582TViKwaEXIoJzP2r9doJ6yu7POxv/y8vu8n3yFZWRJUcVlBWWQsVw2rtiOGFd4VTHcvSBOt7py/DW9t8qgxLLzylce+qR/+8If59ne/z5nzt5FJ5Olrh/zu7/93ZrMZDz34ANV0hy7CaDzFdw2i8QbWPwmozxWeOK2dRNVrK+Ymivj4GCfpALMBvhARokjvtybOGI/HqAbqeomqEhDU5LQIy06YnLuNkI3wYvnAH/8JX/vGN7BVxbXDJSYvWSwbRAzjasRkNKYoCoqq5PpiQWscDZZ5C1FyrBvxxPee4fGvf4vZmTPMm46rB3POXLjEsgl85nN/peVoTBeUputog08cuyaiUxwnY8FYxDqMy45cKgZMH345dg36cX2/dan0YRJjj5iqVpIjiWwp5K3xjsQcRTESI4RIjJGI0InQGUOwBqzBhwZrIpkF0YBg8cHg8l3UTtivDV4KvHFU0wm/8du/qcEK2WzCSoUoBUZyumVNbGps6LAWWlEaa2iNI5JDtORS4GvPuBgTgiK5I68mNCFy9uwFVvMVbd3SNB2uyNYAtmKSCa0Kve0vkoAekRSRFQtiiXr0EuOIKnQ+0vmIjynvIdasr4j2wBYQS4gpzGJdjnU5Yl1vxie/Bw0YjSk0NrwjBj+sxQhiwBgwpmdfMwgesahAUCFob7uLJv4YnBAVolo8FjEZNivIyxFNiMxXNR/44z/WYEsWbSQahzGO0mU4Aho8SMRmBnUGbEFQg7M5Z2c73HX7HcxGY+rlgnO7u5RVwfxgD9/UPPiCexkXBbNRgcRA162QuKVY4xDKAIgbq6W/P56MEVGCbwHIckteJGvNmJQY0hB6Qt1y8Aggm3FijIRj454UIt/m020uMAMVbTsW24MPi157zLLZDFGJ3hNjUrY+KKtg+NBffJK/e/ybFJNZQlRM+QQngkaPFcizDKNprtFoRO4cy8Uhd1w8J2983au5sDth78qTnJ8U3H5ulxfddxcPP/QiaQ6uoas54muq3PZxKLOhLE0i1aCIRpxJYsESsAQyOnLx/RUoBHJRMgUXFUIgdi1tU9PUS6wRjCgWMKrkSLpEU+glRlRTdnBbvp+kkE9qbhN2GFKFfZjsuJOy5UojA4YjRgLRe9rYkRkhyyuuHNb87z/+oF6+77KMs4zQdZgQyKzDCVjTm6kpTIT0nvjy8IBzO1Pe97PvkefddUEfffRLPPv0Uzx47/N5+PKLeOED99AtDsBYgvX4GAFLlLQm6ePcppe/hv6Z9sG/HkFmyCmEkNJHsU89WoOzljwveiLM0SH0rjFxm1EcEDWCCsFYIgZjFCUlljZJq+duTgmoWlir3gHgsJ1EPM4pxhgCMC4z2lWdEGMLohWUjEe+9FU+8onP6k/96BvESEB8TYweMQaJAQ1JpI1HY+bXD5mNSsrc0TYLLpyZ8qbXvkpe9qJ7mVYlu+MRtu5oFvv4eoXtnRXnMjqfZGxaawSTqDWFxnXNnQNhJSQo6jtijBRFkRxNDcSgRFWMcfieuq1xCbAYtH8mpAhxitaWKTbPJniY2hBdvhkXGDZGsCRO2FB9Lz/N0WCXMQZrba/8FIJHY4tzDoyl8dCqw012+cP/+yGefOpZomTkZbEeQwBixEofqpWUFyiKnNVirvPDfYrMcPH8WYRIV9e0bUvdeUaTGZLlLH2ki4JXy5Cd3gA6caeqgjWosQSxKYhoHNj+EotXCMaAy8BlROPwYlHJwRREcYgtkaxAbUY0aRx1Lilw2IRq5KgIlxj6XEc8Eo5PnfrgozGGOJidqj2964ZtRVBNVRFDv6TY0qZ9qLEOnDOEaFJU1GWMioonnn6aP/nwR/Vnf/S18uBtO2jbICLk1mEQDLB3cECZ53jv6WzEWisATdPgfUtRVgSfsnPWWA4aT8DRmAqTj/GrLsn6geIIJFUpeEBV8NEky8UIGclqQlMctas7jLOoWLxXmi6gEsmzkqzIadsWJw5rIEQgdhgBZ0hz9I6UV+3To4lbUlrpGL2fIJZcKstILyaZ3HOBai/rpTdRIxG/FQ9JHOOsoSpKRIQmdIi35FnJ9b0509mUD/75R3jli17AC+44RzCCGIfLk2VETGIkr0bMr19DtWP/cK7f+vZ3ZdHOmexOscwJXSBXx7gYsVgsGO/MmLee9urT3HPxAlYjsZf7FiWIEGIC0KqDNgQaD1EEJxFnBatpv0U1oRNYLGueuXqN7z91RReLFdblVFXF5cuXJc8tzgpdp8QQsaJYA4LFWsH5pKhFkngaiPdoS7Dshc0GAYlqBi9tixNUk6JZe5GBajRGRPDeYwoDPlJkORo6Hrx8mS4GvvDFR5GiSNYBDvKC3/7d39OXPvjvJBdDmVe09ZwiLzlctXgnrFYrZmVJFi3LtuM//87v6ne+/11i77h0TeDizkWWh0tUDGoFLTJyCy+75w7+/b/9NQn1HOsisfNkLqMj0nbKwiv/4T/+hi47s44bVUVObmE6HfPeX3yfXN874CMf+Yh+/Zvf4vq1fWJUui6Q5zm33XabvupVr+JNb3qDPP3003zyUx/X3FnatqXKHGObc8e5c/z8e39Wrnz/u4xLhzOC7zxZnuOjJH3USxcjgohJEQaGspQ+Ka6Do6ABUZNMuZ6pBsQkS7WXesZQ1zW7kzE745K3vvXt8o3HHte6a8izvl7I5qxCy+//zw/ov/nVX5Gnr1whryYczBcUZyfUQ9hbIz5q8saNg6xCrSAuo6gczy4CVbWLIjQaCMYRxfPdp67y6Ff/nocu3ws+Eo1l1fkkr53wyU99Rh974gqjMxe4vjdHVdmZjLEEXnLbXfzdN5/U//WB97Nc1uzt7XHuzHkya8lV6bqOx779Pb711DN85Rvf0suXL/OJR/6GLMuYzw84Mx4zs5YXP/8e9g/mOJeRuRwjAeMD3m+ovpfdW7cJsiZGv7b3t+3+tdzacrNVFefcEWtIRHAGYt3wssv38zPveDvt3rNc2pnQ1AuiwCJEPvyXj/Dpv/4y5c555k3EZgXWZps4TZTk/GGJNkddAfmI6EY0muNGM+adoPkILzne5Kw8XDlc8dFPfVrJS7zN6EJAraVTWHSRz/z1o9RqWcaMzo0J2YiVZLjRLlpO+S///f18f2/FtWXD3fe/kGgz5quWyXSXzgfufN7d5MWIv3n0K/zphz+KFGMox9jJObyrUJMhxlGNxozG0xSu6SOkIYQjyZ+T7CGznYLUrQoDHayILa8uhIBzbuP1iaGoRjRNg9GO7nCPH//R18vLHribbnGNUZ7RBY8pRiyi5Q/e/390vwmsQmQy3VmnDEX6EhcjycKwGcFlBJtRe6WNMNk9x9lLF1jUK4qiIHYdEYO6nEf+9mt85/tXEJezCoDL6CL8w9e/qd/49hPkk90Um6pGZKMpEcfs7Dm++a0niCZjsnuO6e559vYPWa0aLpw7x+Hedc7u7HCwf50zsym7sxmLxYLReIcoGVk1IasmGFfQRSUEpfGBVdPifcRmGbnbENhRp2xTDmmO5z+PXwNyIOVBjyAAku3sNclwrRmL55d//qfFz69TOiViIC+J5YivfOdJPvAnf6aNGtQYwjqK2ZenmBQsSzGbXpEqjEYjQux47WseZndSIX5FJi1lBlEKri87/vwTn9VWMlxRsag7PMLHPvWXrDoPxmG2uG1nNgENfO/J7wLCcrFiVIyQELn/7udxdlzy4N138uDzbuel993LxAnt4R4Xd3e5fuUZQhto6pbloiYGeoWfjJMhRzwQrDEbSbEm7oHo4xYH3PBjH/c4/luWZet7SOnD8XjM8mCPqXPkvuaVL7yfH3vT6zm4fpWiKLh2uECzClNN+aMPfYSvPfZ1DSRlngiid9ttj3QjqBhipEd4AN/w/Lvu4J1vfTP7V5/kTGWgramDJ5+e4+OfeYSnnj2gnJ3hcNVw5dnrPPro3zGaTPExcPHiRYwxVGXO3XfdweH+s5ROUO/Zmc1olgtGeYb4lsv33sOv/vIvya/80i/Kr/2rfynvecfbePH9L6CZH1A6y6jIKYsC53JGoxHj8YQsK5JD2AfmBu5OhMU6336DCNoG7nFdsJ1UHrCaZdtsZXulbVjMD1Bfs1tZtD7g597z43L/8+9BBRofiK6kwXHYdPzZxz6R6kKtYfAYjwbJNs5UZg2xq8lEcaHhHW9+ndx3xzkKXSFxhRqLtwVPXzvg05//grZBUbH85Wc+q8umRjUQo0cJGAJ3XjrPhTMznn3qCcrMQvA0h3NmRcEd587y6pe+hH/9L/653HvpPHefP8v5UclbX/sa+eVfeK/cee4M0zyj3t/HL1dYjSwWS9quY1XXLJfLPgee2mg0Wu/ntGstgsQ4pGcfMb2iJVU7G6APm+Oc20ROSd8PDw+Z7ZwBkgMlKLefnfG+97yb7vA6Z2djfNvQdYHZmfN89e+/zrINlFUya2WIR8WjZeOpdjNlvWJXM8kzuTgb8eNv+xFWzz7NrLBk1nF9/wBbjvn45/6KJ/cO0WrMhz75afLxDI2GaTWiPjhgnGU8+Px7mVY5bb3C4MmdYzKZsJjPKVzGW974RtGuplsesNp7hlDvU7rA/fc+jx9++IeoF3NGoxFlWYE4gkbyPKcsR1RVxWg0whiD936thLf3dTycY0JIGS8VQSXDYwkIYiziUgmISBIB2tVMRxXL5RJjDG3b0nUdLs/YW9Z0tqAOig8RbRa87uUvlB99+CVU7ZwyNIzyjPmqxo7GtM4x92mBDoEYyV3GarUiyzJC6Oi6hhg6SmeR4IndSgsDb3nta+Se289j2gbalnE5JljHY08+w8f++iv6wUe+pNdjhs/GhOjI1XHbbIcH77iTH375S6U+PGRcFQSUohozX9SMJzOKouDcmbPEtkV9Q+GUUSnM966iYcXLX/ESKUYVUQwrL0hWUhYj2rZNcSOb/ANVTUUIWxZlIrQbS2I2sSAdUmsptLvOE1uL2y4+EllXtgHrAtmIJA9UBu6JZLHjvT/xTpkYpbIQ2xprLdPZLlGHLNRR5XS8Wtk5x2q1oqwKcmukbVbMJmPe/pa3UC8OqJyhbZa4PCcYx6e++CU+9LFP05oMrxnj8ZRmsWRsHA+94F7uv+tOplWO9x2qynx+AES6tsYgnDt3hratyXNH2zWo7yirjMm4pCwzrl59BmMMZVkyn88JoQ/T9Ob8SXmHmzVjsBg1HDWSJDliyjrwNrDN8H2NABGGZIPGhOWh2NZo5IH77+Vd73gbvlkxLgu0a5kf7jMejdb2ckoApayTDwHMVoEu4DViXYpQigXjLG944xvlnnvuQrslmfGEpsYIPP7YN3jy6WfIsxQeUd9xfnfKtLQ8/IqXyHSUgDkelbSrJY7AODegHXvXr/CNrz+21n9lVSHOslwuuXbtGvt71zh/dofQLfCrA6z6taFyBOhm47geqR8S1vAZ0jNmO3GQorzbVo+sFa1iEBnyn/0TObme0vTAFyL1fJ+feMfb5KEH7yPWC3JjqOeHTMqC6AcEJCQGFO9T6WKMETWyFnEhBOq20aIoaNoVs9mMH3/3O1G/YlZlEFoKlxFjZHfnHDEKuc3JjbBTFbz0wfu4fM+dLPaf5a7bL4pGT1HmVIVjtVqwWi258uxVHvnCF/XiHc+jUWHl4erhnJ0LlwjW8pGPf0K7GGjblixzZDYFvqMoalKuwLitMkU75OaO5YK3ON4kRbs5m2WHMDMbeRWCMhhEIqlkUYjpzaGOKKYYuelTl1YjVgOFgcLAL/zsz0iO4qLnws6Men5A6TYlJQMhJGfPQPC4lJZe14Pqmt0jdV3zmodfKffefQnxc0qXCKJwOSEovvE4hN1RSWkiP/Lah2XkIlloeOD5dzGpcpxVuhiIKHlRcriq+dO/+AQff+SLPLVf47MJIZ/y+Pev8Bef/oJ+/ktfxmOweYZYg9cOEV1nCdf76M/QRWEdQT4J+KJ9begaCEofJt4gRDGEPnIoYnt0KVYjRlNkcF1LtC41jymNpxETO7rFPi9+4Pm8+61vJi4PKY3SHB4yLnKspkNMzpBCytFT2HQYQzRS5o7ou4QMEZrVkjIvQAOZE9799jcjYUm7WtC1NWVR0K5apuMJTsD4ln/yipfygjsucPjs99kZ5YwLy7ve+Xb29/dTUmY0xhYjNK94/LtP8p9+67/qBz/5Of2Tj39GP/bIl/V3/tsH9H/84Z8S3AjJK9TmtJ3fqjsKKIFA2Nz3IfxtCbORFmENXydiMKqgqRRR+qCokiLSxiR6p5dnZqDu4HExkkmO1bg5uKEpyyM9IkK9ZFbtMJ/v81PvfJv83Ve/po9/+wlmVY6EDhdTkidTJRNwMVKIwYZABmTam6Qx0tUrMjGYCCFGove89odeJl/4whf04498mTwrcNYhmaVyOSPxnN+teMMPv1IcDVofYiqB0PL2t75FPvrZz+u3n23QaDhYLJiOJ5y98wxPX73Kn3788xzOr2MMVFWJKcYEFfYOFuRlTlmN+qzgah3GEdkcn1pbO4OZc4I+1uMcMBwtXd/TK2EMKnZdPZGov8MGj9V0ma3c0Nqi0sioyCG0OPXsVBk/864fkwLP+emEZn6Iix4XPZkG8hjJYyCXdHIkixFtVglZXUc9P2RaVXSrJaGpmZQF41x425tfLzujjJ1RSaiXVE5YHewxK3Ne8/KXMS4smXh2pyXNas64yMmt8JPveiexqymLDOccbdsxXy2ZnNllf7Fi9/wlivGMYraDimW+XHDnnXfixNA2Cwx9bkBS0YFZ51AGsbRxyk5rpvUdXfBrU4rgUyqNiEFYrWrKsuxLwzOm44qdcUkhcG5WMcqEKrdI9DhrKMucLoZ0vrjrcFZolofsjCv8cs7LX/wAb3vT6zh49mku7UwYGaHUSBECO0WG6RoqDZytcqZWGFuL1C02BGZlTlitmI5GTKsRvq7x9ZJXv+Il3Hf389BmxcRZXPDctjtjWmS84XWvkdxCvTgkhoZMIqFZkRvh7W9+k/zS+/4p58Y5JS3TQsg1EpYLzu/OEO/ZnU3JDVSZ5aWXHyQs99mpDGMJnBll7E7H1KslmRVi77sMVtHxuJn2peiDkrbWplKIZO6l5IuIS1gcZFSvKFWFerliXJW89MUvJgBBLbmpcCLMyoz53nWcNmR4osswxtG2LWWZszzcY1rNqIPwtje+XvavXdeDRY0UBRIF17VM8pydzJJVGfdcuoAtckSE0mXkXWCaF/h6Bdpic7CZw7mcRdvynne9g/f/0Z8T3YTlqqGyhhc/cC+j3JAjGEnVD4NoND6dX/hn73m3zMpcP/Wpz3LlmauMCqGsUmynrpes6j1uv+0SDz30Ys6ePcuHPvhBlouaYqdEYmC5d5Wd87u0ywWFy5Cg6XR0X+2xOWxnTpRDbn3mtk/MICn0oCgi0HmP+I4qL5As59U/9Ap56KGHKIoKHxSDgy7QNksuXdihWRwisSGEFh8DRZ6RGUu7bAntEt8qL3vRZaoiF8kKgqRDerkPmK5jOhnThJbXzQ+wRU7TtBTG0R4ccue581SZY7mY4wHjhE6Fru547ateKXXtdbp7SaIK3WrJix54Pnl/DlRDyoNLb2BI8NimQeMV3v26l8sbXnI///D4t/TRv/0KTz31FDazTG6/xH0P3s+lSxfkvnvvAqB56pta1zVWHIeHC8bjBzi7OyEzBhMD6j1xOBq97WRul5dsNfncZ7/IOgkvghscoJhOTFrrCAIhGlZtg7EZ5XhE8JG2bTHae8caCdHjrJI7S/QNyZhR2rZlMt2h6SI+CB6DsRnVdMa8acjFUkYltqnQNlphJRHNLUYclStpDw4oJBVELZdzJBdsZlg2NUU5Qm2BD2DzEVlWcHiwR1VYYlsjscOo7y0U0xdzpYoMH5oUNFODD+BcSfCRVdsgApHAdDYm+FRQ0DQNOzs7dG0qyNo7XAKpPCd0K2LXUWaud8IsQUlp1D4HkCoRFduLJacbezORSV+TlfI36SBzFwPWlVhS7N5qJMaGykJmQGLEZI7FosG5HB89bRvIi4zcGpp2yWRQylXJs9cOcHnB9WcW4CwmS5ksCR4NkWgEUzqaWvFBCVmNDYEOUr2DTdSfTnIKRVawv3/IdGfG/vVnCFkqg/S1wViIxBTf6sMk6QBK2mjuDDmRtmtRn5xYDUolkel0yqpbYkNLu1qARByW5nCfuvaIsUxHE1BDvTwgs5C7lMCPUeh8SIXBpzWJyKc//1epmkDTH2sMdj0YogrWZvioGFsQNBJChxEldJ7c2YQMH1JNDem8WKKswKgq8L4jhg6jw2GGVHnm8pLWd8zrhjJzSNuS9wj2REKRs4oBk5UYhDyADYqJXfI8JdIRcVKm9UsqkyR6nDPpYGGR04aYClVi2pNVkhUX0klOY5O10njF2ZzxaEbbtiwWC1xmyDLH4eKA8aRiPB6zv7+PYMnzkmXdENViM4f6jtwJ+C4Rqc3SuTmRdLpIU5HvEQ6QiFNAJRI1pD8DWJ/STueBV6sVGIt2KR/sbDqpWI2KhLQuoE5oY8DkOa1vU/GuwLxuiL5lNpkQfEtuLfVqhVrHanFA6wNZ7sgzg288RgTnkvWEGFxm8LGl6yJWHMkF1J6qFVSwLqetO0qndKFlOqrofE3tG+pQJ8dJLNGk6IsJikZNVdQIEYdmOdakgoRV4/GdYlyBZDZVYIjDR0PdRqLkiFiirVADo6Kka5dkzib5HyIxeqzNTqf8rWZSVXEKvg32u8omZzmaTphMJliXquREIxo8GiOr1YrGd6iRdVx8iGAO4diiKAghrEPXZVURUZyxlHmW/nWlD0F0mg59xwhEpXAZubVbldmx/+uCVIUmYlksFhRlxny1xGUF3nvquiHPc/I8J9wQlw/rgJlYQxcCIabvIUa6EDCZxfVHTFdNzXRnFzGW+WJJVY0R41gulxRFgTHQrup1/N84S1aUazMcBuc2riPHg1JWQD7z6S8kTGyFLJKySHlOa7aLdrcwN5yoYRPpC0pfxHU0+SCakvzbs6f/VNn0sUN1fCJsAqlOU6zdbCJuBQr7P62x0is8TacxiYqYVLeZjt9aomoK+MXNmk1vbAz1a7Idmd/Oecfh5P92TflGrmsql9t+ez0GpBOhQwR5yJYNp+dD9LhNldY2BoZ/Tjka5RwWkk7KpBaFvhJs6085hgqwobxXYOOTsw51CJvx/fY0uvncVH0ebcOJBhHtO/Z/pWC3iomRVOnRB742J1bSCfth/rUfdAQUR//uZnv/2/9PMbwXj758Qq3qjUQsyYi/eVsvcOtzeL79+w0A2gpC3aydFM7efv+k58fXd9L7w7NNVdqN75z2ffvZaXu4lWTLaf23758TAT9ou5VNwoYdt/tsJzEGtt1G1DZQtgsHTpxDTgfUzYC4yU3fSCA/CPBPI5znRMDJhUWns9ZzUexJi7uV37aRcyvA2PS/6fQ/8DputZ1EONt7+f/CASeJp9MQd7ydRsHPBdihPbeY2/Q/TdwdH/80DvtB2naN0Pb8fVXcremA4wNuPz9NUd2qDjgudk56frP1HF/X0GezvnjqGKp6RATebH2nzXWr7QfWAbeihI8v7Egi+iZK8qR3btb3pLUdX9/28xRkPF10Pdc8iXpP5qAfBAknNRNjXNeADvcD2wz26/Db8ToX4EifIV+7faW6IjnCinCj6DmtQnt7/g1Q4pHSv+1xjjfn3Lqie3vsbWAen2+73yAqhv0N8Bmcu+22vY9hrGGNm/Tl5nR9COFGDjjN7j9tgydxwM0A8o9tJ1HqreqX09aw/f72+Leq4P8x7ag41BvmOPK3lTcD5s0mOP7OrbD3rbbjG9ie6yQ/4bT13Yo/cUR0cfJ+bnW+k3TlSfP9PyfQaZoT6SB2AAAAAElFTkSuQmCC';
+let lang='zh', geminiKey='', currentUser=null;
+let foodB64=null,sportB64=null,sportMime='video/mp4';
+let foodStream=null,sportStream=null,mediaRec=null,recChunks=[],timerInt=null,recSecs=0;
+let recognition=null,voiceActive=false,voiceText='';
+let calYear=new Date().getFullYear(),calMonth=new Date().getMonth(),selectedDate=todayStr();
+let pendingSaveEntry=null;
+
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+
+// ── Firestore helpers ──
+async function fsGet(col,docId){
+  const snap=await db.collection(col).doc(docId).get();
+  return snap.exists?snap.data():null;
+}
+async function fsSet(col,docId,data){
+  await db.collection(col).doc(docId).set(data,{merge:true});
+}
+async function fsUpdate(col,docId,data){
+  await db.collection(col).doc(docId).set(data,{merge:true});
+}
+async function fsGetAll(col){
+  const snap=await db.collection(col).get();
+  const result={};
+  snap.forEach(doc=>result[doc.id]=doc.data());
+  return result;
+}
+
+// ── LocalStorage for session/lang ──
+function lsGet(k){try{return localStorage.getItem(k);}catch{return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch{}}
+function lsDel(k){try{localStorage.removeItem(k);}catch{}}
+
+function spinner(show){id('spinner').classList.toggle('show',show);}
+function todayStr(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function hashPw(pw){let h=0;for(let i=0;i<pw.length;i++){h=((h<<5)-h)+pw.charCodeAt(i);h|=0;}return h.toString(36);}
+
+// ── i18n ──
+const T={
+  zh:{
+    appTitle:'健康 AI 助手',appSub:'数据配合 — 使你更精准有效',
+    introTitle:'Niva 健康 AI',introSub:'数据配合 — 使你更精准有效',
+    start:'开始使用',
+    features:[
+      {icon:'🍽',title:'食物卡路里分析',desc:'拍照或上传食物图片，AI 即时分析卡路里、营养素与健康评分。'},
+      {icon:'🏃',title:'AI 智能运动分析',desc:'录制或上传运动视频，分析动作姿势、消耗卡路里与改善建议。'},
+      {icon:'📔',title:'健康日记',desc:'每次分析结果可选择保存，月历与列表双视图回顾健康数据。'},
+      {icon:'🔒',title:'云端账号系统',desc:'注册账号，管理员审批后即可使用，数据安全存于云端。'},
+    ],
+    login:'登入',logout:'登出',register:'注册',
+    username:'用户名',password:'密码',displayName:'显示名称',confirmPw:'确认密码',
+    noAccount:'没有账号？立即注册',hasAccount:'已有账号？返回登入',
+    submit:'提交注册',pwHint:'只允许英文、数字、底线',pwMin:'至少 6 个字符',
+    pendingTitle:'等待管理员审批',pendingMsg:'你的账号已提交，请等待管理员审批后再登入。',
+    backToLogin:'返回登入',
+    aiTab:'AI 分析',diaryTab:'日记',aboutTab:'关于',bmiTab:'BMI',recipeTab:'食谱',
+    foodTab:'🍽 食物分析',sportTab:'🏃 运动分析',
+    foodUpload:'点击上传或拖拽食物图片',takePic:'📸 拍照',
+    foodHint:'✏️ 补充说明（可选）',foodHintPh:'例如：炒饭 + 煎蛋，不加酱汁',
+    analyzeFood:'分析食物',analyzingFood:'分析中...',reanalyze:'重新分析',
+    sportUpload:'点击上传或拖拽运动视频',record:'🎬 录制',
+    sportNotice:'ℹ️ 建议视频 30 秒内，可用语音或文字描述运动内容辅助分析。',
+    voiceLbl:'🎤 语音描述运动',voiceStart:'点击开始语音输入',voiceStop:'录音中... 点击停止',
+    voicePh:'语音转文字将显示在此处...',
+    sportTextLbl:'✏️ 或用文字描述',sportTextPh:'例如：深蹲 3 组 x 15 次，慢跑 10 分钟',
+    sportDurLbl:'⏱ 运动时间',analyzeSport:'分析运动',
+    todayEntries:'今天的记录',noEntries:'暂无记录',
+    kcal:'千卡',protein:'蛋白质',carbs:'碳水',fat:'脂肪',fiber:'纤维',
+    healthScore:'健康评分',formScore:'姿势评分',intensity:'强度',burnedKcal:'消耗千卡',
+    foodEntry:'食物',sportEntry:'运动',
+    adminKeyTitle:'🔑 Gemini API Key',
+    adminKeyDesc:'设置后所有已批准的用户无需填写即可直接使用 AI 功能。',
+    adminKeySave:'保存',adminKeySet:'Key 已设置',adminKeyDel:'删除',
+    pendingUsers:'⏳ 待审批用户',allUsers:'👥 所有用户',
+    noPending:'暂无待审批用户',noUsers:'暂无注册用户',
+    approve:'✓ 批准',reject:'✕ 拒绝',
+    statusPending:'待审批',statusApproved:'已批准',statusRejected:'已拒绝',
+    noKey:'管理员尚未设置 Gemini API Key，请联系管理员。',
+    errFill:'请填写用户名和密码',errWrong:'用户名或密码错误',
+    errPending:'账号正在等待审批，通过后可登入',errRejected:'你的账号已被拒绝，请联系管理员。',
+    errUnFormat:'用户名只允许英文、数字、底线',errUnTaken:'此用户名已被注册',
+    errPwMatch:'两次密码不一致',regSuccess:'注册成功！请等待管理员审批。',
+    analyzeFail:'分析失败：',noPhoto:'请先上传或拍摄食物照片',
+    noVideoOrText:'请上传视频或描述运动内容',
+    saveToDiary:'💾 保存到日记？',saveDesc:'是否将此次分析结果保存到健康日记？',
+    saveYes:'✓ 保存',saveNo:'不保存',savedOk:'✓ 已保存到日记',
+    days:['日','一','二','三','四','五','六'],
+  },
+  en:{
+    appTitle:'Health AI Assistant',appSub:'Data-driven precision for your health',
+    introTitle:'Niva Health AI',introSub:'Data-driven precision for your health',
+    start:'Get Started',
+    features:[
+      {icon:'🍽',title:'Food Calorie Analysis',desc:'Take a photo or upload a food image. AI instantly analyses calories, nutrients & health score.'},
+      {icon:'🏃',title:'AI Exercise Analysis',desc:'Record or upload a workout video. Get posture feedback, calorie burn & improvement tips.'},
+      {icon:'📔',title:'Health Diary',desc:'Choose to save each result. Review your data in calendar or list view.'},
+      {icon:'🔒',title:'Cloud Account System',desc:'Register an account. After admin approval, your data is securely stored in the cloud.'},
+    ],
+    login:'Login',logout:'Logout',register:'Register',
+    username:'Username',password:'Password',displayName:'Display Name',confirmPw:'Confirm Password',
+    noAccount:"Don't have an account? Sign up",hasAccount:'Have an account? Login',
+    submit:'Submit Registration',pwHint:'Letters, numbers and underscore only',pwMin:'At least 6 characters',
+    pendingTitle:'Awaiting Admin Approval',pendingMsg:'Your account has been submitted. Please wait for admin approval.',
+    backToLogin:'Back to Login',
+    aiTab:'AI Analysis',diaryTab:'Diary',aboutTab:'About',bmiTab:'BMI',recipeTab:'Recipe',
+    foodTab:'🍽 Food',sportTab:'🏃 Exercise',
+    foodUpload:'Tap to upload or drag a food photo',takePic:'📸 Camera',
+    foodHint:'✏️ Add note (optional)',foodHintPh:'e.g. Fried rice + egg, no sauce',
+    analyzeFood:'Analyse Food',analyzingFood:'Analysing...',reanalyze:'Re-analyse',
+    sportUpload:'Tap to upload or drag a workout video',record:'🎬 Record',
+    sportNotice:'ℹ️ Videos under 30 seconds work best. Add voice or text notes to assist analysis.',
+    voiceLbl:'🎤 Describe your workout by voice',voiceStart:'Tap to start voice input',voiceStop:'Recording... Tap to stop',
+    voicePh:'Voice transcript will appear here...',
+    sportTextLbl:'✏️ Or type a description',sportTextPh:'e.g. 3 sets of squats x 15 reps, 10 min jog',
+    sportDurLbl:'⏱ Workout Duration',analyzeSport:'Analyse Workout',
+    todayEntries:"Today's Entries",noEntries:'No entries yet',
+    kcal:'kcal',protein:'Protein',carbs:'Carbs',fat:'Fat',fiber:'Fiber',
+    healthScore:'Health Score',formScore:'Form Score',intensity:'Intensity',burnedKcal:'Burned',
+    foodEntry:'Food',sportEntry:'Exercise',
+    adminKeyTitle:'🔑 Gemini API Key',
+    adminKeyDesc:'Once set, all approved users can use AI features without entering a key.',
+    adminKeySave:'Save',adminKeySet:'Key is set',adminKeyDel:'Remove',
+    pendingUsers:'⏳ Pending Approval',allUsers:'👥 All Users',
+    noPending:'No pending users',noUsers:'No registered users',
+    approve:'✓ Approve',reject:'✕ Reject',
+    statusPending:'Pending',statusApproved:'Approved',statusRejected:'Rejected',
+    noKey:'Admin has not set a Gemini API Key. Please contact your admin.',
+    errFill:'Please enter username and password',errWrong:'Incorrect username or password',
+    errPending:'Account is awaiting approval',errRejected:'Your account has been rejected. Contact admin.',
+    errUnFormat:'Username: letters, numbers, underscore only',errUnTaken:'Username already taken',
+    errPwMatch:'Passwords do not match',regSuccess:'Registered! Awaiting admin approval.',
+    analyzeFail:'Analysis failed: ',noPhoto:'Please upload or take a food photo first',
+    noVideoOrText:'Please upload a video or describe your workout',
+    saveToDiary:'💾 Save to Diary?',saveDesc:'Would you like to save this result to your health diary?',
+    saveYes:'✓ Save',saveNo:'Skip',savedOk:'✓ Saved to diary',
+    days:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+  }
+};
+
+function t(k){return T[lang][k]||k;}
+function id(x){return document.getElementById(x);}
+function setText(elId,txt){const e=id(elId);if(e)e.textContent=txt;}
+function setAttr(elId,attr,val){const e=id(elId);if(e)e.setAttribute(attr,val);}
+
+function setLang(l,btn){
+  lang=l;lsSet('lang',l);
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  applyLang();
+}
+function applyLang(){
+  document.querySelectorAll('.lang-mini').forEach(mini=>{
+    mini.innerHTML=`<button onclick="setLang('zh',null);applyLang()" class="${lang==='zh'?'active':''}">中</button><button onclick="setLang('en',null);applyLang()" class="${lang==='en'?'active':''}">EN</button>`;
+  });
+  setText('i-title',t('introTitle'));setText('i-sub',t('introSub'));setText('i-start-btn',t('start'));
+  renderFeatures();
+  setText('l-title',t('appTitle'));setText('l-sub',t('appSub'));
+  setAttr('login-user','placeholder',t('username'));setAttr('login-pass','placeholder',t('password'));
+  setText('l-btn',t('login'));setText('l-reg-link',t('noAccount'));
+  setText('r-title',t('register'));setText('r-un-hint',t('pwHint'));
+  setAttr('reg-user','placeholder','3–20');setAttr('reg-name','placeholder',t('displayName'));
+  setAttr('reg-pass','placeholder',t('pwMin'));setAttr('reg-pass2','placeholder',t('confirmPw'));
+  setText('reg-btn',t('submit'));setText('r-login-link',t('hasAccount'));
+  const zh2=lang==='zh';
+  setText('r-dealer-lbl',zh2?'Dealer Code':'Dealer Code');
+  setText('r-dealer-hint',zh2?'必须填写有效的 Dealer Code 才能注册':'A valid Dealer Code is required to register');
+  setAttr('reg-dealer-code','placeholder',zh2?'向你的经销商索取':'Get this from your dealer');
+  setText('pend-title',t('pendingTitle'));setText('pend-btn',t('backToLogin'));
+  setText('ad-logout',t('logout'));setText('ad-key-title',t('adminKeyTitle'));
+  setText('ad-key-desc',t('adminKeyDesc'));setText('ad-key-save',t('adminKeySave'));
+  setText('ad-key-set',t('adminKeySet'));setText('ad-key-del',t('adminKeyDel'));
+  setText('ad-pend-title',t('pendingUsers'));setText('ad-all-title',t('allUsers'));
+  setText('m-logout',t('logout'));
+  setText('tab-food-btn',t('foodTab'));setText('tab-sport-btn',t('sportTab'));
+  setText('nav-ai-lbl',t('aiTab'));setText('nav-bmi-lbl',t('bmiTab'));setText('nav-recipe-lbl',t('recipeTab'));setText('nav-diary-lbl',t('diaryTab'));setText('nav-about-lbl',t('aboutTab'));
+  setText('food-upload-txt',t('foodUpload'));setText('food-cam-btn',t('takePic'));
+  setText('food-hint-lbl',t('foodHint'));setAttr('food-hint','placeholder',t('foodHintPh'));
+  setText('food-btn-text',t('analyzeFood'));
+  setText('sport-notice',t('sportNotice'));setText('sport-upload-txt',t('sportUpload'));
+  setText('sport-cam-btn',t('record'));
+  setText('sport-voice-lbl',t('voiceLbl'));setText('voice-btn-text',t('voiceStart'));
+  setText('sport-text-lbl',t('sportTextLbl'));setAttr('sport-hint','placeholder',t('sportTextPh'));
+  setText('sport-dur-lbl',t('sportDurLbl'));setText('sport-btn-text',t('analyzeSport'));
+  setText('no-key-msg',t('noKey'));
+  renderCalendar();
+}
+
+function renderFeatures(){
+  id('i-features').innerHTML=t('features').map(f=>`<div class="feature-item"><div class="feature-icon">${f.icon}</div><div><div class="feature-title">${f.title}</div><div class="feature-desc">${f.desc}</div></div></div>`).join('');
+}
+
+function showScreen(s){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));id(s).classList.add('active');window.scrollTo(0,0);}
+function showErr(elId,msg){const e=id(elId);e.style.display='block';e.textContent=msg;}
+function hideErr(elId){id(elId).style.display='none';}
+function showOk(elId,msg){const e=id(elId);e.style.display='block';e.textContent=msg;}
+
+// ── Intro ──
+async function goFromIntro(){
+  lsSet('seen-intro','1');
+  const session=lsGet('session');
+  if(session){
+    try{
+      const s=JSON.parse(session);
+      if(s.username===ADMIN_USER){await loadAdmin();await loadAdminKey();showScreen('screen-admin');return;}
+      const udata=await fsGet('users',s.username);
+      if(udata&&udata.status==='approved'){
+        if(udata.role==='admin'){await loadAdmin();await loadAdminKey();showScreen('screen-admin');return;}
+        if(udata.role==='dealer'){await startDealerSession(s.username,udata);return;}
+        await startUserSession(s.username,udata);return;
+      }
+    }catch(e){}
+  }
+  showScreen('screen-login');
+}
+
+// ── Auth ──
+function updateStr(){
+  const pw=id('reg-pass').value,bar=id('pw-str');
+  if(!pw){bar.style.width='0';return;}
+  let s=0;if(pw.length>=6)s++;if(pw.length>=10)s++;if(/[A-Z]/.test(pw))s++;if(/[0-9]/.test(pw))s++;if(/[^A-Za-z0-9]/.test(pw))s++;
+  bar.style.background=['#F09595','#EF9F27','#EF9F27','#97C459','#639922'][Math.min(s-1,4)]||'#F09595';
+  bar.style.width=(s/5*100)+'%';
+}
+function checkReg(){
+  const u=id('reg-user').value.trim(),n=id('reg-name').value.trim(),p=id('reg-pass').value,p2=id('reg-pass2').value,dc=id('reg-dealer-code').value.trim();
+  id('reg-btn').disabled=!(u.length>=3&&/^[a-zA-Z0-9_]+$/.test(u)&&n.length>0&&p.length>=6&&p===p2&&dc.length>=3);
+}
+
+async function doRegister(){
+  hideErr('reg-err');
+  const un=id('reg-user').value.trim().toLowerCase(),nm=id('reg-name').value.trim(),pw=id('reg-pass').value,pw2=id('reg-pass2').value,dc=id('reg-dealer-code').value.trim().toUpperCase();
+  if(!/^[a-zA-Z0-9_]+$/.test(un)){showErr('reg-err',t('errUnFormat'));return;}
+  if(pw!==pw2){showErr('reg-err',t('errPwMatch'));return;}
+  if(un===ADMIN_USER){showErr('reg-err',t('errUnTaken'));return;}
+  if(!dc||dc.length<3){showErr('reg-err',lang==='zh'?'请填写有效的 Dealer Code':'Please enter a valid Dealer Code');return;}
+  spinner(true);
+  try{
+    // Validate dealer code
+    if(dc==='ADMIN'){
+      // Admin code - mark as admin candidate
+      const existing=await fsGet('users',un);
+      if(existing){showErr('reg-err',t('errUnTaken'));return;}
+      await fsSet('users',un,{name:nm,pw:hashPw(pw),status:'pending',role:'admin_candidate',dealerCode:'ADMIN',createdAt:new Date().toLocaleDateString()});
+      showOk('reg-ok',lang==='zh'?'注册成功！请等待管理员审批。':'Registered! Awaiting admin approval.');
+      id('reg-btn').disabled=true;
+      setTimeout(()=>showScreen('screen-pending'),1500);
+      return;
+    }
+    // Validate dealer code exists
+    const dealerSnap=await db.collection('users').where('dealerCode','==',dc).where('role','==','dealer').get();
+    if(dealerSnap.empty){
+      showErr('reg-err',lang==='zh'?`Dealer Code「${dc}」无效，请向你的经销商确认。`:`Dealer Code "${dc}" is invalid. Please check with your dealer.`);
+      return;
+    }
+    const existing=await fsGet('users',un);
+    if(existing){showErr('reg-err',t('errUnTaken'));return;}
+    await fsSet('users',un,{name:nm,pw:hashPw(pw),status:'pending',role:'user',dealerCode:dc,createdAt:new Date().toLocaleDateString()});
+    showOk('reg-ok',t('regSuccess'));
+    id('reg-btn').disabled=true;
+    setTimeout(()=>showScreen('screen-pending'),1500);
+  }catch(e){showErr('reg-err','Error: '+e.message);}
+  finally{spinner(false);}
+}
+
+async function doLogin(){
+  hideErr('login-err');
+  const un=id('login-user').value.trim().toLowerCase(),pw=id('login-pass').value;
+  if(!un||!pw){showErr('login-err',t('errFill'));return;}
+  if(un===ADMIN_USER&&pw===ADMIN_PASS){
+    lsSet('session',JSON.stringify({username:ADMIN_USER}));
+    await loadAdmin();await loadAdminKey();showScreen('screen-admin');return;
+  }
+  spinner(true);
+  try{
+    const udata=await fsGet('users',un);
+    if(!udata||udata.pw!==hashPw(pw)){showErr('login-err',t('errWrong'));return;}
+    if(udata.status==='pending'){showErr('login-err',t('errPending'));return;}
+    if(udata.status==='rejected'){showErr('login-err',t('errRejected'));return;}
+    // Check expiry
+    if(udata.expiryDate&&udata.expiryDate<todayStr()){
+      showErr('login-err',lang==='zh'?`你的账号已于 ${udata.expiryDate} 到期，请联系管理员续期。`:`Your account expired on ${udata.expiryDate}. Please contact admin to renew.`);
+      return;
+    }
+    lsSet('session',JSON.stringify({username:un}));
+    if(udata.role==='admin'){await loadAdmin();await loadAdminKey();showScreen('screen-admin');return;}
+    if(udata.role==='dealer'){await startDealerSession(un,udata);return;}
+    await startUserSession(un,udata);
+  }catch(e){showErr('login-err','Error: '+e.message);}
+  finally{spinner(false);}
+}
+
+async function startUserSession(un,udata){
+  currentUser=un;
+  const cfg=await fsGet('config','app');
+  geminiKey=(cfg&&cfg.geminiKey)||'';
+  id('main-avatar').textContent=udata.name.charAt(0).toUpperCase();
+  id('no-key-notice').style.display=geminiKey?'none':'block';
+  selectedDate=todayStr();calYear=new Date().getFullYear();calMonth=new Date().getMonth();
+  showScreen('screen-main');
+  renderCalendar();renderDiaryList(selectedDate);
+}
+
+// ── Dealer Session ──
+let currentDealer=null;
+async function startDealerSession(un,udata){
+  currentDealer={username:un,name:udata.name,dealerCode:udata.dealerCode};
+  document.querySelectorAll('img[alt="Niva"]').forEach(img=>img.src=LOGO_SRC);
+  id('dealer-avatar').textContent=udata.name.charAt(0).toUpperCase();
+  id('dealer-code-display').textContent=udata.dealerCode||'——';
+  id('dealer-lang-mini').innerHTML=`<button onclick="setLang('zh',null);applyLang()" class="${lang==='zh'?'active':''}">中</button><button onclick="setLang('en',null);applyLang()" class="${lang==='en'?'active':''}">EN</button>`;
+  const zh=lang==='zh';
+  id('dealer-logout').textContent=zh?'登出':'Logout';
+  id('dealer-code-lbl').textContent=zh?'我的 Dealer Code':'My Dealer Code';
+  id('dealer-code-desc').textContent=zh?'用户注册时需填写此 Code 才能关联到你':'Users must enter this code when registering to be linked to you';
+  id('dealer-pend-title').textContent=zh?'⏳ 待审批用户':'⏳ Pending Approval';
+  id('dealer-all-title').textContent=zh?'👥 我的用户':"👥 My Users";
+  id('dealer-stat-pending-lbl').textContent=zh?'待审批':'Pending';
+  id('dealer-stat-approved-lbl').textContent=zh?'已批准':'Approved';
+  id('dealer-stat-total-lbl').textContent=zh?'总用户':'Total';
+  showScreen('screen-dealer');
+  await loadDealerPanel();
+}
+async function loadDealerPanel(){
+  if(!currentDealer)return;
+  spinner(true);
+  try{
+    const snap=await db.collection('users').where('dealerCode','==',currentDealer.dealerCode).get();
+    const users={};
+    snap.forEach(doc=>users[doc.id]=doc.data());
+    const pending=Object.entries(users).filter(([,u])=>u.status==='pending');
+    const approved=Object.entries(users).filter(([,u])=>u.status==='approved');
+    const all=Object.entries(users);
+    id('dealer-stat-pending').textContent=pending.length;
+    id('dealer-stat-approved').textContent=approved.length;
+    id('dealer-stat-total').textContent=all.length;
+    const zh=lang==='zh';
+    id('dealer-pending-list').innerHTML=pending.length===0
+      ?`<div class="empty-state">${zh?'暂无待审批用户':'No pending users'}</div>`
+      :pending.map(([un,u])=>`<div class="admin-user-row"><div class="admin-user-info"><div class="admin-av">${u.name.charAt(0).toUpperCase()}</div><div><div class="admin-name">${u.name}</div><div class="admin-meta">@${un} · ${u.createdAt}</div></div></div><div class="admin-actions"><button class="approve-btn" onclick="dealerApprove('${un}')">${zh?'✓ 批准':'✓ Approve'}</button><button class="reject-btn" onclick="dealerReject('${un}')">${zh?'✕ 拒绝':'✕ Reject'}</button></div></div>`).join('');
+    id('dealer-all-list').innerHTML=all.length===0
+      ?`<div class="empty-state">${zh?'暂无用户':'No users yet'}</div>`
+      :all.map(([un,u])=>{
+        const statusColor=u.status==='approved'?'background:#EAF3DE;color:#27500A':u.status==='pending'?'background:#FAEEDA;color:#633806':'background:#FCEBEB;color:#791F1F';
+        const statusLbl=u.status==='approved'?(zh?'已批准':'Approved'):u.status==='pending'?(zh?'待审批':'Pending'):(zh?'已拒绝':'Rejected');
+        return`<div class="admin-user-row" style="flex-wrap:wrap;gap:8px">
+          <div class="admin-user-info">
+            <div class="admin-av">${u.name.charAt(0).toUpperCase()}</div>
+            <div><div class="admin-name">${u.name}</div><div class="admin-meta">@${un} · ${u.createdAt}</div></div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span style="font-size:11px;padding:2px 8px;border-radius:99px;font-weight:500;${statusColor}">${statusLbl}</span>
+            <button class="diary-btn" onclick="openDiaryModal('${un}','${u.name}')">📔 ${zh?'日记':'Diary'}</button>
+          </div>
+        </div>`;
+      }).join('');
+  }finally{spinner(false);}
+}
+async function dealerApprove(un){spinner(true);try{await fsSet('users',un,{status:'approved',role:'user'});await loadDealerPanel();}finally{spinner(false);}}
+async function dealerReject(un){spinner(true);try{await fsSet('users',un,{status:'rejected'});await loadDealerPanel();}finally{spinner(false);}}
+
+async function doLogout(){
+  lsDel('session');
+  currentUser=null;currentDealer=null;geminiKey='';voiceText='';
+  id('login-user').value='';id('login-pass').value='';
+  showScreen('screen-login');
+}
+
+// ── Admin ──
+async function saveAdminKey(){
+  const k=id('admin-apikey').value.trim();
+  if(!k){alert(lang==='zh'?'请输入 API Key':'Please enter an API Key');return;}
+  spinner(true);
+  try{
+    await fsSet('config','app',{geminiKey:k});
+    id('admin-apikey').value='';
+    id('key-badge').style.display='flex';
+    alert(lang==='zh'?'✓ API Key 已保存！':'✓ API Key saved!');
+  }finally{spinner(false);}
+}
+async function clearAdminKey(){
+  if(!confirm(lang==='zh'?'确定删除 API Key？':'Remove API Key?'))return;
+  spinner(true);
+  try{await db.collection('config').doc('app').update({geminiKey:firebase.firestore.FieldValue.delete()});}
+  finally{spinner(false);id('key-badge').style.display='none';}
+}
+async function loadAdminKey(){
+  const cfg=await fsGet('config','app');
+  id('key-badge').style.display=(cfg&&cfg.geminiKey)?'flex':'none';
+}
+async function loadAdmin(){
+  spinner(true);
+  try{
+    const users=await fsGetAll('users');
+    const today=todayStr();
+    const pending=Object.entries(users).filter(([,u])=>u.status==='pending');
+    const all=Object.entries(users);
+    id('pending-list').innerHTML=pending.length===0
+      ?`<div class="empty-state">${t('noPending')}</div>`
+      :pending.map(([un,u])=>`<div class="admin-user-row"><div class="admin-user-info"><div class="admin-av">${u.name.charAt(0).toUpperCase()}</div><div><div class="admin-name">${u.name}</div><div class="admin-meta">@${un} · ${u.createdAt}${u.dealerCode?` · Code: ${u.dealerCode}`:''}</div></div></div><div class="admin-actions"><button class="approve-btn" onclick="approveUser('${un}')">${t('approve')}</button><button class="reject-btn" onclick="rejectUser('${un}')">${t('reject')}</button></div></div>`).join('');
+    id('all-users-list').innerHTML=all.length===0
+      ?`<div class="empty-state">${t('noUsers')}</div>`
+      :all.map(([un,u])=>{
+        const isExpired=u.expiryDate&&u.expiryDate<today;
+        const isDealer=u.role==='dealer';
+        const expiryLabel=u.expiryDate?`<span style="font-size:11px;color:${isExpired?'var(--text-danger)':'var(--text-tertiary)'}"> · ${lang==='zh'?'到期':'Exp'}: ${u.expiryDate}</span>`:'';
+        const dealerLabel=isDealer?`<span style="font-size:11px;color:var(--text-warning)"> · Code: ${u.dealerCode||'—'}</span>`:'';
+        const isAdmin=u.role==='admin';
+        const roleColor=isAdmin?'background:#FCEBEB;color:#791F1F':isDealer?'background:#FAEEDA;color:#633806':u.status==='approved'?'background:#EAF3DE;color:#27500A':u.status==='pending'?'background:#FAEEDA;color:#633806':'background:#FCEBEB;color:#791F1F';
+        const roleLbl=isAdmin?'👑 Admin':isDealer?`🏪 Dealer`:u.status==='pending'?t('statusPending'):u.status==='approved'?t('statusApproved'):t('statusRejected');
+        return`<div class="admin-user-row" style="flex-wrap:wrap;gap:8px">
+          <div class="admin-user-info">
+            <div class="admin-av" style="${isDealer?'background:var(--bg-warning);color:var(--text-warning)':''}">${u.name.charAt(0).toUpperCase()}</div>
+            <div>
+              <div class="admin-name">${u.name}${isExpired?`<span class="expired-badge">${lang==='zh'?'已到期':'Expired'}</span>`:''}</div>
+              <div class="admin-meta">@${un} · ${u.createdAt}${expiryLabel}${dealerLabel}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span class="badge" style="font-size:11px;padding:2px 8px;border-radius:99px;font-weight:500;${roleColor}">${roleLbl}</span>
+            <button class="expiry-btn" onclick="openExpiryModal('${un}','${u.expiryDate||''}')">📅 ${lang==='zh'?'到期日':'Expiry'}</button>
+            <button class="reset-btn" onclick="openResetModal('${un}','${u.name}')">🔑 ${lang==='zh'?'重置密码':'Reset PW'}</button>
+            <button class="diary-btn" onclick="openDiaryModal('${un}','${u.name}')">📔 ${lang==='zh'?'日记':'Diary'}</button>
+          </div>
+        </div>`;
+      }).join('');
+  }finally{spinner(false);}
+}
+async function approveUser(un){
+  // Show role selector modal
+  currentApproveUser=un;
+  const zh=lang==='zh';
+  id('role-modal-title').textContent=zh?'✅ 批准用户 — 选择角色':'✅ Approve User — Select Role';
+  id('role-modal-desc').textContent=zh?`请为「${un}」选择角色：`:`Please select a role for "${un}":`;
+  id('role-user-lbl').textContent=zh?'普通用户 (User)':'Regular User';
+  id('role-user-desc').textContent=zh?'可使用 AI 分析、BMI、日记、食谱功能':'Access AI analysis, BMI, diary and recipe features';
+  id('role-dealer-lbl').textContent=zh?'经销商 (Dealer)':'Dealer';
+  id('role-dealer-desc').textContent=zh?'拥有专属 Dealer Code，可管理旗下用户':'Gets a unique Dealer Code to manage their own users';
+  id('role-cancel-btn').textContent=zh?'取消':'Cancel';
+  id('role-overlay').classList.add('show');
+}
+
+let currentApproveUser=null;
+async function confirmApproveWithRole(role){
+  closeModal('role-overlay');
+  spinner(true);
+  try{
+    const zh=lang==='zh';
+    const updates={status:'approved',role};
+    if(role==='dealer'){
+      const code=(currentApproveUser.substring(0,3).toUpperCase()+Math.floor(1000+Math.random()*9000));
+      updates.dealerCode=code;
+    }
+    if(role==='admin'){
+      updates.dealerCode='ADMIN';
+    }
+    await fsSet('users',currentApproveUser,updates);
+    await loadAdmin();
+    const toast=document.createElement('div');
+    const msg=role==='admin'?(zh?'✓ 已批准为管理员 (Admin)':'✓ Approved as Admin')
+      :role==='dealer'?(zh?'✓ 已批准为 Dealer':'✓ Approved as Dealer')
+      :(zh?'✓ 已批准为普通用户':'✓ Approved as User');
+    toast.textContent=msg;
+    toast.style.cssText='position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1a6b8a;color:#fff;padding:8px 20px;border-radius:99px;font-size:13px;font-weight:500;z-index:400;pointer-events:none;white-space:nowrap';
+    document.body.appendChild(toast);setTimeout(()=>toast.remove(),3000);
+  }finally{spinner(false);}
+}
+async function rejectUser(un){spinner(true);try{await fsSet('users',un,{status:'rejected'});await loadAdmin();}finally{spinner(false);}}
+
+// ── Expiry Modal ──
+let currentExpiryUser=null;
+function openExpiryModal(un,currentExpiry){
+  currentExpiryUser=un;
+  id('expiry-date-input').value=currentExpiry||'';
+  id('expiry-modal-title').textContent=`📅 ${lang==='zh'?'设置到期日':'Set Expiry Date'}`;
+  id('expiry-modal-desc').textContent=lang==='zh'?'设置用户账号到期日，到期后将自动禁止登入。':'Set the account expiry date. The user will be blocked from logging in after this date.';
+  id('expiry-label').textContent=lang==='zh'?'到期日期':'Expiry Date';
+  id('expiry-clear-btn').textContent=lang==='zh'?'清除到期日':'Clear Expiry';
+  id('expiry-save-btn').textContent=lang==='zh'?'保存':'Save';
+  id('expiry-overlay').classList.add('show');
+}
+async function saveExpiry(){
+  const date=id('expiry-date-input').value;
+  if(!date){alert(lang==='zh'?'请选择日期':'Please select a date');return;}
+  spinner(true);
+  try{
+    await fsSet('users',currentExpiryUser,{expiryDate:date});
+    closeModal('expiry-overlay');
+    await loadAdmin();
+    alert(lang==='zh'?`✓ 已设置到期日：${date}`:`✓ Expiry set: ${date}`);
+  }finally{spinner(false);}
+}
+async function clearExpiry(){
+  if(!confirm(lang==='zh'?'确定清除到期日？':'Clear expiry date?'))return;
+  spinner(true);
+  try{
+    await db.collection('users').doc(currentExpiryUser).update({expiryDate:firebase.firestore.FieldValue.delete()});
+    closeModal('expiry-overlay');
+    await loadAdmin();
+  }finally{spinner(false);}
+}
+
+// ── Reset Password ──
+let currentResetUser=null;
+function openResetModal(un, name){
+  currentResetUser=un;
+  id('reset-modal-title').textContent=`🔑 ${lang==='zh'?'重置密码':'Reset Password'} — ${name}`;
+  id('reset-modal-desc').textContent=lang==='zh'?`为「${name}」设置新密码，用户下次登入时使用新密码。`:`Set a new password for "${name}". The user will use this password on next login.`;
+  id('reset-pw-lbl').textContent=lang==='zh'?'新密码':'New Password';
+  id('reset-pw2-lbl').textContent=lang==='zh'?'确认新密码':'Confirm New Password';
+  id('reset-cancel-btn').textContent=lang==='zh'?'取消':'Cancel';
+  id('reset-confirm-btn').textContent=lang==='zh'?'确认重置':'Confirm Reset';
+  setAttr('reset-new-pw','placeholder',lang==='zh'?'至少 6 个字符':'At least 6 characters');
+  setAttr('reset-new-pw2','placeholder',lang==='zh'?'再次输入密码':'Confirm password');
+  id('reset-new-pw').value='';
+  id('reset-new-pw2').value='';
+  id('reset-err').style.display='none';
+  id('reset-overlay').classList.add('show');
+}
+async function confirmResetPassword(){
+  const pw=id('reset-new-pw').value;
+  const pw2=id('reset-new-pw2').value;
+  const errEl=id('reset-err');
+  errEl.style.display='none';
+  if(pw.length<6){errEl.style.display='block';errEl.textContent=lang==='zh'?'密码至少需要 6 个字符':'Password must be at least 6 characters';return;}
+  if(pw!==pw2){errEl.style.display='block';errEl.textContent=lang==='zh'?'两次密码不一致':'Passwords do not match';return;}
+  spinner(true);
+  try{
+    await fsSet('users',currentResetUser,{pw:hashPw(pw)});
+    closeModal('reset-overlay');
+    // Show success toast
+    const toast=document.createElement('div');
+    toast.textContent=lang==='zh'?`✓ 密码已重置`:`✓ Password reset successfully`;
+    toast.style.cssText='position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1a6b8a;color:#fff;padding:8px 20px;border-radius:99px;font-size:13px;font-weight:500;z-index:400;pointer-events:none;white-space:nowrap';
+    document.body.appendChild(toast);
+    setTimeout(()=>toast.remove(),2500);
+  }catch(e){
+    errEl.style.display='block';
+    errEl.textContent=(lang==='zh'?'重置失败：':'Reset failed: ')+e.message;
+  }finally{spinner(false);}
+}
+
+// ── User Diary Modal ──
+let currentDiaryUser=null, currentDiaryView='food', currentDiaryData={}, currentWeightData=[];
+async function openDiaryModal(un,name){
+  currentDiaryUser=un;currentDiaryView='food';currentDiaryData={};currentWeightData=[];
+  id('diary-modal-title').textContent=`📔 ${name}${lang==='zh'?'的日记':"'s Diary"}`;
+  id('diary-food-btn').textContent=`🍽 ${lang==='zh'?'食物':'Food'}`;
+  id('diary-sport-btn').textContent=`🏃 ${lang==='zh'?'运动':'Exercise'}`;
+  id('diary-weight-btn').textContent=`⚖️ ${lang==='zh'?'体重':'Weight'}`;
+  id('diary-food-btn').classList.add('active');
+  id('diary-sport-btn').classList.remove('active');
+  id('diary-weight-btn').classList.remove('active');
+  id('diary-modal-overlay').classList.add('show');
+  id('diary-modal-content').innerHTML=`<div class="empty-state">${lang==='zh'?'加载中...':'Loading...'}</div>`;
+  spinner(true);
+  try{
+    const [diarySnap, weightData]=await Promise.all([
+      db.collection('diary').where('user','==',un).get(),
+      fsGet('weightlog',un)
+    ]);
+    diarySnap.forEach(doc=>{const d=doc.data();currentDiaryData[d.date]=d.entries||[];});
+    currentWeightData=weightData&&weightData.entries?weightData.entries:[];
+    renderAdminDiary();
+  }catch(e){id('diary-modal-content').innerHTML=`<div class="empty-state">${e.message}</div>`;}
+  finally{spinner(false);}
+}
+function switchDiaryView(view,el){
+  currentDiaryView=view;
+  document.querySelectorAll('.diary-tab-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderAdminDiary();
+}
+function renderAdminDiary(){
+  if(currentDiaryView==='weight'){
+    const sorted=[...currentWeightData].sort((a,b)=>b.date.localeCompare(a.date));
+    if(sorted.length===0){id('diary-modal-content').innerHTML=`<div class="diary-empty">${lang==='zh'?'暂无体重记录':'No weight entries'}</div>`;return;}
+    id('diary-modal-content').innerHTML=`<div class="admin-diary-entry">${sorted.map((e,i)=>{
+      const prev=sorted[i+1];const diff=prev?((+e.weight)-(+prev.weight)).toFixed(1):null;
+      const dc=diff===null?'':(+diff>0?'color:#E24B4A':'color:#639922');
+      const ds=diff===null?'':`<span style="font-size:11px;${dc};margin-left:6px">${+diff>0?'+':''}${diff} kg</span>`;
+      return`<div class="admin-diary-item"><span style="font-size:13px;color:var(--text-secondary)">${e.date}</span><div><span style="font-size:15px;font-weight:600">${e.weight}</span><span style="font-size:12px;color:var(--text-secondary);margin-left:3px">kg</span>${ds}</div></div>`;
+    }).join('')}</div>`;
+    return;
+  }
+  const entries=Object.entries(currentDiaryData).sort((a,b)=>b[0].localeCompare(a[0]));
+  const filtered=entries.map(([date,items])=>({date,items:items.filter(e=>e.type===currentDiaryView)})).filter(d=>d.items.length>0);
+  if(filtered.length===0){id('diary-modal-content').innerHTML=`<div class="diary-empty">${lang==='zh'?'暂无记录':'No entries yet'}</div>`;return;}
+  id('diary-modal-content').innerHTML=filtered.map(({date,items})=>`
+    <div class="admin-diary-entry">
+      <div class="admin-diary-date">📅 ${date}</div>
+      ${items.map(e=>currentDiaryView==='food'
+        ?`<div class="admin-diary-item"><div><div class="admin-diary-name">${e.name}</div><div class="admin-diary-stats">${e.calories} kcal · ${lang==='zh'?'蛋白质':'Protein'} ${e.protein}g · ${lang==='zh'?'碳水':'Carbs'} ${e.carbs}g · ${lang==='zh'?'脂肪':'Fat'} ${e.fat}g</div></div><span style="font-size:11px;color:var(--text-tertiary)">${e.time}</span></div>`
+        :`<div class="admin-diary-item"><div><div class="admin-diary-name">${e.name}</div><div class="admin-diary-stats">${e.calories} kcal · ${e.duration} min · ${e.intensity}</div></div><span style="font-size:11px;color:var(--text-tertiary)">${e.time}</span></div>`
+      ).join('')}
+    </div>`).join('');
+}
+
+function closeModal(id_){id(id_).classList.remove('show');}
+function dismissModal(id_,e){if(e.target===id(id_))closeModal(id_);}
+
+// ── Tabs ──
+function switchAiTab(tab,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));el.classList.add('active');id('panel-'+tab).classList.add('active');}
+function switchMainTab(tab,el){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  id('tab-ai').style.display=tab==='ai'?'block':'none';
+  id('tab-bmi').style.display=tab==='bmi'?'block':'none';
+  id('tab-recipe').style.display=tab==='recipe'?'block':'none';
+  id('tab-diary').style.display=tab==='diary'?'block':'none';
+  id('tab-about').style.display=tab==='about'?'block':'none';
+  if(tab==='diary'){renderCalendar();renderDiaryList(selectedDate);}
+  if(tab==='about'){renderAbout();}
+  if(tab==='bmi'){renderBmiLang();loadWeightLog();}
+  if(tab==='recipe'){renderRecipeUI();}
+}
+
+// ── Camera / Upload ──
+function ev(e){e.preventDefault();}
+function dropFood(e){e.preventDefault();const f=e.dataTransfer.files[0];if(f)readFoodFile(f);}
+function loadFoodFile(inp){if(inp.files[0])readFoodFile(inp.files[0]);}
+function readFoodFile(f){stopFoodCam();const r=new FileReader();r.onload=e=>setFoodImg(e.target.result);r.readAsDataURL(f);}
+function setFoodImg(d){foodB64=d;id('food-img').src=d;id('food-preview').style.display='block';document.querySelector('#panel-food .upload-zone').style.display='none';id('food-btn').disabled=false;id('food-result').style.display='none';}
+function clearFood(){foodB64=null;id('food-preview').style.display='none';document.querySelector('#panel-food .upload-zone').style.display='block';id('food-btn').disabled=true;id('food-file').value='';}
+async function startFoodCam(){try{foodStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});const v=id('food-video');v.srcObject=foodStream;v.style.display='block';id('food-snap').style.display='';id('food-stop').style.display='';document.querySelector('#panel-food .upload-zone').style.display='none';}catch(e){alert('Camera error: '+e.message);}}
+function snapFood(){const v=id('food-video'),c=id('food-canvas');c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);setFoodImg(c.toDataURL('image/jpeg',0.85));stopFoodCam();}
+function stopFoodCam(){if(foodStream){foodStream.getTracks().forEach(t=>t.stop());foodStream=null;}id('food-video').style.display='none';id('food-snap').style.display='none';id('food-stop').style.display='none';if(!foodB64)document.querySelector('#panel-food .upload-zone').style.display='block';}
+function dropSport(e){e.preventDefault();const f=e.dataTransfer.files[0];if(f)readSportFile(f);}
+function loadSportFile(inp){if(inp.files[0])readSportFile(inp.files[0]);}
+function readSportFile(f){stopSportCam();sportMime=f.type||'video/mp4';const r=new FileReader();r.onload=e=>setSportVid(e.target.result);r.readAsDataURL(f);}
+function setSportVid(d){sportB64=d;id('sport-preview-vid').src=d;id('sport-preview').style.display='block';document.querySelector('#panel-sport .upload-zone').style.display='none';id('sport-result').style.display='none';}
+function clearSport(){sportB64=null;id('sport-preview').style.display='none';document.querySelector('#panel-sport .upload-zone').style.display='block';id('sport-file').value='';}
+async function startSportCam(){try{sportStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:true});const v=id('sport-video');v.srcObject=sportStream;v.style.display='block';recChunks=[];recSecs=0;const mime=MediaRecorder.isTypeSupported('video/webm;codecs=vp9')?'video/webm;codecs=vp9':'video/webm';sportMime=mime;mediaRec=new MediaRecorder(sportStream,{mimeType:mime});mediaRec.ondataavailable=e=>{if(e.data.size>0)recChunks.push(e.data);};mediaRec.onstop=()=>{const blob=new Blob(recChunks,{type:sportMime});const r=new FileReader();r.onload=e=>setSportVid(e.target.result);r.readAsDataURL(blob);};mediaRec.start(200);id('sport-stop-rec').style.display='';id('sport-cancel').style.display='';document.querySelector('#panel-sport .upload-zone').style.display='none';const td=id('sport-timer');td.style.display='block';timerInt=setInterval(()=>{recSecs++;const m=String(Math.floor(recSecs/60)).padStart(2,'0'),s=String(recSecs%60).padStart(2,'0');td.innerHTML=`<span class="rec-dot"></span>${m}:${s}`;if(recSecs>=30)stopSportRec();},1000);}catch(e){alert('Camera error: '+e.message);}}
+function stopSportRec(){clearInterval(timerInt);id('sport-timer').style.display='none';if(mediaRec&&mediaRec.state!=='inactive')mediaRec.stop();stopSportCam(true);}
+function stopSportCam(keep=false){clearInterval(timerInt);id('sport-timer').style.display='none';if(sportStream){sportStream.getTracks().forEach(t=>t.stop());sportStream=null;}id('sport-video').style.display='none';id('sport-stop-rec').style.display='none';id('sport-cancel').style.display='none';if(!keep&&!sportB64)document.querySelector('#panel-sport .upload-zone').style.display='block';}
+
+// ── Voice ──
+function toggleVoice(){
+  if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){alert('Use Chrome or Edge');return;}
+  if(voiceActive){recognition.stop();return;}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  recognition=new SR();recognition.lang=lang==='zh'?'zh-CN':'en-US';recognition.continuous=true;recognition.interimResults=true;
+  recognition.onstart=()=>{voiceActive=true;id('voice-btn').classList.add('recording');id('voice-btn-text').textContent=t('voiceStop');};
+  recognition.onresult=e=>{let interim='',final='';for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)final+=e.results[i][0].transcript;else interim+=e.results[i][0].transcript;}voiceText+=final;id('voice-transcript').textContent=(voiceText+interim)||t('voicePh');if(voiceText)id('sport-hint').value=voiceText;};
+  recognition.onend=()=>{voiceActive=false;id('voice-btn').classList.remove('recording');id('voice-btn-text').textContent=t('voiceStart');};
+  recognition.start();
+}
+
+// ── Gemini ──
+async function callGemini(parts,prompt){
+  if(!geminiKey){alert('⚠️ '+t('noKey'));throw new Error('no-key');}
+  const models=['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-1.5-flash'];
+  let lastErr='';
+  for(const model of models){
+    try{
+      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[...parts,{text:prompt}]}],generationConfig:{temperature:0.2,maxOutputTokens:1200}})});
+      const data=await res.json();
+      if(data.error){lastErr=data.error.message;continue;}
+      const text=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
+      return JSON.parse(text.replace(/```json|```/g,'').trim());
+    }catch(e){lastErr=e.message;}
+  }
+  throw new Error(lastErr);
+}
+
+// ── Diary ──
+async function addDiaryEntry(entry){
+  if(!currentUser)return;
+  const dateKey=todayStr();
+  const docId=currentUser+'_'+dateKey;
+  const existing=await fsGet('diary',docId);
+  const entries=existing&&existing.entries?existing.entries:[];
+  entries.unshift(entry);
+  await fsSet('diary',docId,{user:currentUser,date:dateKey,entries});
+}
+
+function renderCalendar(){
+  const monthNames=lang==='zh'?['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月']:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  id('month-label').textContent=`${calYear} ${monthNames[calMonth]}`;
+  const days=T[lang].days;
+  const firstDay=new Date(calYear,calMonth,1).getDay();
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  const today=todayStr();
+  // Fetch diary entries for month
+  const monthStr=`${calYear}-${String(calMonth+1).padStart(2,'0')}`;
+  db.collection('diary').where('user','==',currentUser||'').get().then(snap=>{
+    const hasDays=new Set();
+    snap.forEach(doc=>{if(doc.data().date&&doc.data().date.startsWith(monthStr))hasDays.add(doc.data().date);});
+    let html=days.map(d=>`<div class="cal-header">${d}</div>`).join('');
+    for(let i=0;i<firstDay;i++)html+=`<div class="cal-day empty"></div>`;
+    for(let d=1;d<=daysInMonth;d++){
+      const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const isToday=ds===today,hasEntry=hasDays.has(ds),isSel=ds===selectedDate;
+      html+=`<div class="cal-day${isToday?' today':''}${hasEntry?' has-entry':''}${isSel?' selected':''}" onclick="selectDate('${ds}')">${d}${hasEntry&&!isSel?'<div class="cal-dot"></div>':''}</div>`;
+    }
+    id('calendar-grid').innerHTML=html;
+  }).catch(()=>{});
+}
+function changeMonth(dir){calMonth+=dir;if(calMonth<0){calMonth=11;calYear--;}if(calMonth>11){calMonth=0;calYear++;}renderCalendar();}
+function selectDate(ds){
+  selectedDate=ds;renderCalendar();renderDiaryList(ds);
+  setText('diary-day-title',ds===todayStr()?(lang==='zh'?'📋 今天的记录':"📋 Today's Entries"):`📋 ${ds}`);
+}
+async function renderDiaryList(ds){
+  if(!currentUser)return;
+  const docId=currentUser+'_'+ds;
+  const data=await fsGet('diary',docId);
+  const entries=data&&data.entries?data.entries:[];
+  const list=id('diary-list');if(!list)return;
+  if(entries.length===0){list.innerHTML=`<div class="diary-empty">${t('noEntries')}</div>`;return;}
+  list.innerHTML=entries.map(e=>{
+    if(e.type==='food')return`<div class="diary-entry"><div class="diary-entry-header"><span class="diary-entry-type">${t('foodEntry')}</span><span class="diary-entry-time">${e.time}</span></div><div class="diary-entry-name">${e.name}</div><div class="diary-entry-stats"><span class="diary-stat"><strong>${e.calories}</strong> ${t('kcal')}</span><span class="diary-stat">${t('protein')} <strong>${e.protein}g</strong></span><span class="diary-stat">${t('carbs')} <strong>${e.carbs}g</strong></span><span class="diary-stat">${t('fat')} <strong>${e.fat}g</strong></span></div></div>`;
+    return`<div class="diary-entry"><div class="diary-entry-header"><span class="diary-entry-type" style="background:var(--bg-success);color:var(--text-success)">${t('sportEntry')}</span><span class="diary-entry-time">${e.time}</span></div><div class="diary-entry-name">${e.name}</div><div class="diary-entry-stats"><span class="diary-stat"><strong>${e.calories}</strong> ${t('kcal')} ${t('burnedKcal')}</span><span class="diary-stat">${e.duration} min</span><span class="diary-stat">${t('intensity')}: <strong>${e.intensity}</strong></span></div></div>`;
+  }).join('');
+}
+
+// ── Save Dialog ──
+function showSaveDialog(entry){
+  pendingSaveEntry=entry;
+  setText('save-title',t('saveToDiary'));setText('save-desc',t('saveDesc'));
+  setText('save-yes-btn',t('saveYes'));setText('save-no-btn',t('saveNo'));
+  id('save-overlay').classList.add('show');
+}
+async function confirmSave(){
+  if(!pendingSaveEntry)return;
+  spinner(true);
+  try{
+    await addDiaryEntry(pendingSaveEntry);
+    pendingSaveEntry=null;closeSave();
+    const toast=document.createElement('div');
+    toast.textContent=t('savedOk');
+    toast.style.cssText='position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1a6b8a;color:#fff;padding:8px 20px;border-radius:99px;font-size:13px;font-weight:500;z-index:400;pointer-events:none';
+    document.body.appendChild(toast);setTimeout(()=>toast.remove(),2000);
+  }finally{spinner(false);}
+}
+function closeSave(){id('save-overlay').classList.remove('show');pendingSaveEntry=null;}
+function dismissSave(e){if(e.target===id('save-overlay'))closeSave();}
+
+// ── Food Analysis ──
+async function analyzeFood(){
+  if(!foodB64){alert(t('noPhoto'));return;}
+  const hint=id('food-hint').value.trim(),btn=id('food-btn'),bt=id('food-btn-text');
+  btn.disabled=true;bt.innerHTML='<span class="loading-dots"><span></span><span></span><span></span></span> '+t('analyzingFood');
+  const b64=foodB64.split(',')[1],mime=foodB64.split(';')[0].split(':')[1];
+  const langInstruct=lang==='zh'?'请用中文回复所有文字字段（food_name, serving_size, health_summary, highlights text, suggestion）。':'Reply all text fields in English (food_name, serving_size, health_summary, highlights text, suggestion).';
+  const prompt=`You are a professional nutritionist. Analyse this food image${hint?`, user note: "${hint}"`:''}. ${langInstruct} Reply ONLY in JSON: {"food_name":"name","confidence":"high/medium/low","total_calories":number,"serving_size":"size","macros":{"carbs":number,"protein":number,"fat":number,"fiber":number},"health_score":number_1_to_10,"health_summary":"2-3 sentences","highlights":[{"text":"point","type":"good/warn/bad"}],"suggestion":"1-2 sentences"}`;
+  try{
+    const d=await callGemini([{inline_data:{mime_type:mime,data:b64}}],prompt);
+    showFoodResult(d);
+    showSaveDialog({type:'food',name:d.food_name,calories:Math.round(d.total_calories),protein:Math.round(d.macros.protein),carbs:Math.round(d.macros.carbs),fat:Math.round(d.macros.fat),time:new Date().toLocaleTimeString(lang==='zh'?'zh-CN':'en-US',{hour:'2-digit',minute:'2-digit'})});
+  }catch(e){if(e.message!=='no-key')alert(t('analyzeFail')+e.message);}
+  finally{btn.disabled=false;bt.textContent=t('reanalyze');}
+}
+function showFoodResult(d){
+  const sec=id('food-result');sec.style.display='block';
+  const cc=d.confidence==='high'?'#639922':d.confidence==='medium'?'#BA7517':'#E24B4A';
+  const cl=d.confidence==='high'?(lang==='zh'?'高置信度':'High'):d.confidence==='medium'?(lang==='zh'?'中置信度':'Medium'):(lang==='zh'?'低置信度':'Low');
+  id('food-stats').innerHTML=`<div class="stat-card"><div class="s-label">${t('kcal')}</div><div class="s-val">${Math.round(d.total_calories)}</div></div><div class="stat-card"><div class="s-label">${t('carbs')}</div><div class="s-val">${Math.round(d.macros.carbs)}<span class="s-unit">g</span></div></div><div class="stat-card"><div class="s-label">${t('protein')}</div><div class="s-val">${Math.round(d.macros.protein)}<span class="s-unit">g</span></div></div><div class="stat-card"><div class="s-label">${t('fat')}</div><div class="s-val">${Math.round(d.macros.fat)}<span class="s-unit">g</span></div></div><div class="stat-card"><div class="s-label">${t('fiber')}</div><div class="s-val">${Math.round(d.macros.fiber)}<span class="s-unit">g</span></div></div><div class="stat-card"><div class="s-label">${t('healthScore')}</div><div class="s-val">${d.health_score}<span class="s-unit">/10</span></div></div>`;
+  const sc=d.health_score>=7?'#639922':d.health_score>=5?'#EF9F27':'#E24B4A';
+  const tags=(d.highlights||[]).map(h=>`<span class="tag ${h.type}">${h.text}</span>`).join('');
+  id('food-cards').innerHTML=`<div class="info-card"><h3>🍽 ${d.food_name}<span style="font-size:11px;font-weight:400;color:${cc};margin-left:auto">${cl}</span></h3><p style="font-size:12px;color:var(--text-tertiary);margin-bottom:5px">${d.serving_size}</p><div class="score-bar"><div class="score-fill" style="width:${d.health_score*10}%;background:${sc}"></div></div><p style="font-size:12px">${t('healthScore')} ${d.health_score}/10</p></div><div class="info-card"><h3>❤️ ${lang==='zh'?'健康分析':'Health Analysis'}</h3><p>${d.health_summary}</p><div class="tag-row">${tags}</div></div><div class="info-card"><h3>💡 ${lang==='zh'?'饮食建议':'Nutrition Tips'}</h3><p>${d.suggestion}</p></div>`;
+  sec.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ── Sport Analysis ──
+async function analyzeSport(){
+  const hint=id('sport-hint').value.trim()||voiceText,duration=id('sport-dur').value;
+  if(!sportB64&&!hint){alert(t('noVideoOrText'));return;}
+  const btn=id('sport-btn'),bt=id('sport-btn-text');
+  btn.disabled=true;bt.innerHTML='<span class="loading-dots"><span></span><span></span><span></span></span> '+t('analyzingFood');
+  const langInstruct2=lang==='zh'?'请用中文回复所有文字字段（sport_name, form_summary, muscles, highlights text, suggestion, recovery）。':'Reply all text fields in English (sport_name, form_summary, muscles, highlights text, suggestion, recovery).';
+  const prompt=`You are a professional fitness coach. ${hint?`User description: "${hint}". `:''}Workout duration: ${duration} minutes. ${sportB64?'Analyse the movement form in the video.':'Analyse based on the description.'} ${langInstruct2} Reply ONLY in JSON: {"sport_name":"name","duration":${duration},"calories_burned":number,"intensity":"${lang==='zh'?'低强度/中强度/高强度':'Low/Medium/High'}","form_score":number_1_to_10,"form_summary":"2-3 sentences","muscles":["muscle1"],"highlights":[{"text":"point","type":"good/warn/bad"}],"suggestion":"1-2 sentences","recovery":"recovery tip"}`;
+  try{
+    let parts=[];
+    if(sportB64){const b64=sportB64.split(',')[1],mime=sportB64.split(';')[0].split(':')[1];parts=[{inline_data:{mime_type:mime,data:b64}}];}
+    const d=await callGemini(parts,prompt);
+    showSportResult(d);
+    showSaveDialog({type:'sport',name:d.sport_name,calories:Math.round(d.calories_burned),duration:d.duration,intensity:d.intensity,time:new Date().toLocaleTimeString(lang==='zh'?'zh-CN':'en-US',{hour:'2-digit',minute:'2-digit'})});
+  }catch(e){if(e.message!=='no-key')alert(t('analyzeFail')+e.message);}
+  finally{btn.disabled=false;bt.textContent=t('analyzeSport');}
+}
+function showSportResult(d){
+  const sec=id('sport-result');sec.style.display='block';
+  const ic=d.intensity==='High'||d.intensity==='高强度'?'#E24B4A':d.intensity==='Medium'||d.intensity==='中强度'?'#BA7517':'#639922';
+  id('sport-stats').innerHTML=`<div class="stat-card"><div class="s-label">${lang==='zh'?'项目':'Sport'}</div><div class="s-val" style="font-size:13px">${d.sport_name}</div></div><div class="stat-card"><div class="s-label">${lang==='zh'?'时间':'Duration'}</div><div class="s-val">${d.duration}<span class="s-unit">min</span></div></div><div class="stat-card"><div class="s-label">${t('burnedKcal')}</div><div class="s-val">${Math.round(d.calories_burned)}<span class="s-unit">${t('kcal')}</span></div></div><div class="stat-card"><div class="s-label">${t('intensity')}</div><div class="s-val" style="font-size:12px;color:${ic}">${d.intensity}</div></div><div class="stat-card"><div class="s-label">${t('formScore')}</div><div class="s-val">${d.form_score}<span class="s-unit">/10</span></div></div>`;
+  const sc=d.form_score>=7?'#639922':d.form_score>=5?'#EF9F27':'#E24B4A';
+  const muscles=(d.muscles||[]).map(m=>`<span class="tag">${m}</span>`).join('');
+  const tags=(d.highlights||[]).map(h=>`<span class="tag ${h.type}">${h.text}</span>`).join('');
+  id('sport-cards').innerHTML=`<div class="info-card"><h3>🏃 ${lang==='zh'?'动作分析':'Form Analysis'}<span style="font-size:11px;font-weight:400;color:var(--text-tertiary);margin-left:auto">${t('formScore')} ${d.form_score}/10</span></h3><div class="score-bar"><div class="score-fill" style="width:${d.form_score*10}%;background:${sc}"></div></div><p>${d.form_summary}</p></div><div class="info-card"><h3>💪 ${lang==='zh'?'主要肌群':'Muscles'}</h3><div class="tag-row">${muscles}</div></div><div class="info-card"><h3>⭐ ${lang==='zh'?'运动亮点':'Highlights'}</h3><div class="tag-row">${tags}</div></div><div class="info-card"><h3>💡 ${lang==='zh'?'改进建议':'Tips'}</h3><p>${d.suggestion}</p></div><div class="info-card"><h3>😴 ${lang==='zh'?'恢复建议':'Recovery'}</h3><p>${d.recovery}</p></div>`;
+  sec.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ── BMI ──
+let bmiGender='male', bmiUnit='metric', bmiActivity='moderate', bmiActivityFactor=1.55;
+
+function selectActivity(aid, factor, btn){
+  bmiActivity=aid; bmiActivityFactor=factor;
+  renderBmiLang();
+}
+
+function renderBmiLang(){
+  const zh=lang==='zh';
+  setText('bmi-calc-title', zh?'⚖️ BMI 计算器':'⚖️ BMI Calculator');
+  setText('bmi-gender-lbl', zh?'性别':'Gender');
+  setText('lbl-male', zh?'男':'Male');
+  setText('lbl-female', zh?'女':'Female');
+  setText('bmi-age-lbl', zh?'年龄':'Age');
+  setText('bmi-age-unit', zh?'岁':'yrs');
+  setText('bmi-height-lbl', zh?'身高':'Height');
+  setText('bmi-weight-lbl', zh?'体重':'Weight');
+  setText('bmi-height-imp-lbl','Height');
+  setText('bmi-weight-imp-lbl','Weight');
+  setText('bmi-calc-btn', zh?'计算 BMI':'Calculate BMI');
+  setText('bmi-lbl-under', zh?'偏轻':'Underweight');
+  setText('bmi-lbl-normal', zh?'正常':'Normal');
+  setText('bmi-lbl-over', zh?'超重':'Overweight');
+  setText('bmi-lbl-obese', zh?'肥胖':'Obese');
+  setText('bmi-ideal-lbl', zh?'理想体重范围':'Ideal Weight');
+  setText('bmi-diff-lbl', zh?'距离理想体重':'Weight Difference');
+  setText('weight-log-title', zh?'📈 每日体重记录':'📈 Daily Weight Log');
+  setText('weight-log-btn', zh?'记录':'Log');
+  setText('weight-no-data', zh?'暂无记录':'No entries yet');
+  setText('bmi-activity-title', zh?'🏃 活动量（影响每日卡路里消耗）':'🏃 Activity Level (affects daily calorie burn)');
+  setText('bmi-meta-title', zh?'🔥 每日卡路里消耗':'🔥 Daily Calorie Expenditure');
+  setText('bmi-bmr-lbl', zh?'基础代谢率 BMR':'Basal Metabolic Rate');
+  setText('bmi-tdee-lbl', zh?'每日总消耗 TDEE':'Total Daily Energy');
+  setText('bmi-water-title', zh?'💧 每日建议饮水量':'💧 Daily Water Intake');
+  const unitMetric=zh?'公制 cm / kg':'Metric cm / kg';
+  const unitImp=zh?'英制 ft·in / lb':'Imperial ft·in / lb';
+  id('unit-metric').textContent=unitMetric;
+  id('unit-imperial').textContent=unitImp;
+
+  // Activity levels
+  const activities=zh?[
+    {id:'sedentary',label:'🪑 久坐',desc:'几乎不运动（办公室工作）',factor:1.2},
+    {id:'light',label:'🚶 轻度活动',desc:'每周 1–3 天轻量运动',factor:1.375},
+    {id:'moderate',label:'🏃 中度活动',desc:'每周 3–5 天适度运动',factor:1.55},
+    {id:'active',label:'💪 高度活动',desc:'每周 6–7 天剧烈运动',factor:1.725},
+    {id:'veryactive',label:'🔥 非常活跃',desc:'每天高强度运动或体力工作',factor:1.9},
+  ]:[
+    {id:'sedentary',label:'🪑 Sedentary',desc:'Little or no exercise (desk job)',factor:1.2},
+    {id:'light',label:'🚶 Lightly Active',desc:'Light exercise 1–3 days/week',factor:1.375},
+    {id:'moderate',label:'🏃 Moderately Active',desc:'Moderate exercise 3–5 days/week',factor:1.55},
+    {id:'active',label:'💪 Very Active',desc:'Hard exercise 6–7 days/week',factor:1.725},
+    {id:'veryactive',label:'🔥 Extra Active',desc:'Very hard exercise & physical job',factor:1.9},
+  ];
+  id('bmi-activity-list').innerHTML=activities.map(a=>`
+    <button onclick="selectActivity('${a.id}',${a.factor},this)" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid ${bmiActivity===a.id?'var(--teal)':'var(--border-secondary)'};background:${bmiActivity===a.id?'var(--bg-info)':'var(--bg-primary)'};border-radius:var(--radius-md);cursor:pointer;text-align:left;width:100%">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:${bmiActivity===a.id?'var(--teal)':'var(--text-primary)'}">${a.label}</div>
+        <div style="font-size:11px;color:var(--text-tertiary)">${a.desc}</div>
+      </div>
+      ${bmiActivity===a.id?'<span style="color:var(--teal);font-size:16px">✓</span>':''}
+    </button>`).join('');
+}
+
+function setGender(g, btn){
+  bmiGender=g;
+  document.querySelectorAll('.gender-btn').forEach(b=>{
+    b.style.border=`0.5px solid var(--border-secondary)`;
+    b.style.background=`var(--bg-primary)`;
+    b.style.color=`var(--text-secondary)`;
+  });
+  btn.style.border=`1.5px solid var(--teal)`;
+  btn.style.background=`var(--bg-info)`;
+  btn.style.color=`var(--teal)`;
+}
+function setUnit(u, btn){
+  bmiUnit=u;
+  document.querySelectorAll('.unit-btn').forEach(b=>{b.style.background='transparent';b.style.border='none';b.style.color='var(--text-secondary)';});
+  btn.style.background='var(--bg-primary)';btn.style.border='0.5px solid var(--border-tertiary)';btn.style.color='var(--text-primary)';
+  id('height-metric-wrap').style.display=u==='metric'?'block':'none';
+  id('height-imperial-wrap').style.display=u==='imperial'?'block':'none';
+  id('weight-metric-wrap').style.display=u==='metric'?'block':'none';
+  id('weight-imperial-wrap').style.display=u==='imperial'?'block':'none';
+  id('weight-log-unit').textContent=u==='metric'?'kg':'lb';
+}
+function syncBmi(field){
+  if(field==='age'){id('age-input').value=id('age-slider').value;}
+  if(field==='height'){id('height-input').value=id('height-slider').value;}
+  if(field==='weight'){id('weight-input').value=id('weight-slider').value;}
+}
+function syncBmiInput(field){
+  if(field==='age'){const v=Math.min(100,Math.max(10,+id('age-input').value));id('age-slider').value=v;}
+  if(field==='height'){const v=Math.min(220,Math.max(100,+id('height-input').value));id('height-slider').value=v;}
+  if(field==='weight'){const v=Math.min(200,Math.max(30,+id('weight-input').value));id('weight-slider').value=v;}
+}
+function calcBmi(){
+  const age=+id('age-input').value||30;
+  let heightM, weightKg;
+  if(bmiUnit==='metric'){
+    heightM=(+id('height-input').value||165)/100;
+    weightKg=+id('weight-input').value||65;
+  } else {
+    const ft=+id('height-ft').value||5, inch=+id('height-in').value||5;
+    heightM=(ft*12+inch)*0.0254;
+    weightKg=(+id('weight-lb').value||143)*0.453592;
+  }
+  if(!heightM||!weightKg){alert(lang==='zh'?'请填写身高和体重':'Please enter height and weight');return;}
+  const zh=lang==='zh';
+  const unit=bmiUnit==='metric'?'kg':'lb';
+  const bmi=weightKg/(heightM*heightM);
+  const idealMin=18.5*heightM*heightM, idealMax=24.9*heightM*heightM;
+  const diff=weightKg-((idealMin+idealMax)/2);
+  const diffVal=bmiUnit==='metric'?diff.toFixed(1):(diff*2.205).toFixed(1);
+  const idealMinDisp=bmiUnit==='metric'?idealMin.toFixed(1):(idealMin*2.205).toFixed(1);
+  const idealMaxDisp=bmiUnit==='metric'?idealMax.toFixed(1):(idealMax*2.205).toFixed(1);
+
+  // BMR Mifflin-St Jeor
+  let bmr=bmiGender==='male'?10*weightKg+6.25*(heightM*100)-5*age+5:10*weightKg+6.25*(heightM*100)-5*age-161;
+  const tdee=Math.round(bmr*bmiActivityFactor);
+  bmr=Math.round(bmr);
+
+  // Water: 35ml/kg + activity bonus
+  const actBonus={sedentary:0,light:200,moderate:400,active:600,veryactive:800}[bmiActivity]||400;
+  const waterMl=Math.round(weightKg*35+actBonus);
+  const waterL=(waterMl/1000).toFixed(1);
+  const glasses=Math.round(waterMl/250);
+
+  let cat,color,pct,advice;
+  if(bmi<18.5){cat=zh?'偏轻':'Underweight';color='#85B7EB';pct=Math.max(2,(bmi/18.5)*22);advice=zh?'你的 BMI 偏低，建议增加营养摄入，多吃高蛋白食物，配合力量训练增加肌肉量。':'Your BMI is below normal. Increase nutritional intake, eat more protein-rich foods and add strength training.';}
+  else if(bmi<25){cat=zh?'正常':'Normal';color='#639922';pct=22+((bmi-18.5)/6.5)*30;advice=zh?'你的 BMI 处于健康范围！保持均衡饮食和规律运动，维持当前体重即可。':'Your BMI is in the healthy range! Maintain a balanced diet and regular exercise.';}
+  else if(bmi<30){cat=zh?'超重':'Overweight';color='#BA7517';pct=52+((bmi-25)/5)*25;advice=zh?'你的 BMI 略高，建议减少高糖高脂食物，每周进行至少 150 分钟中强度有氧运动。':'Your BMI is slightly high. Reduce high-sugar foods and aim for 150 min of cardio per week.';}
+  else{cat=zh?'肥胖':'Obese';color='#E24B4A';pct=Math.min(97,77+((bmi-30)/10)*20);advice=zh?'你的 BMI 偏高，建议咨询医生或营养师，制定科学的饮食和运动计划，逐步减轻体重。':'Your BMI is above normal. Consider consulting a doctor to develop a diet and exercise plan.';}
+
+  const goalData=zh?[
+    {label:'减重（每周-0.5kg）',cal:tdee-500,color:'#E24B4A'},
+    {label:'缓慢减重（每周-0.25kg）',cal:tdee-250,color:'#EF9F27'},
+    {label:'维持体重',cal:tdee,color:'#639922'},
+    {label:'增肌（每周+0.25kg）',cal:tdee+250,color:'#185FA5'},
+  ]:[
+    {label:'Weight Loss (-0.5kg/wk)',cal:tdee-500,color:'#E24B4A'},
+    {label:'Slow Loss (-0.25kg/wk)',cal:tdee-250,color:'#EF9F27'},
+    {label:'Maintain Weight',cal:tdee,color:'#639922'},
+    {label:'Muscle Gain (+0.25kg/wk)',cal:tdee+250,color:'#185FA5'},
+  ];
+
+  const waterTips=zh?'💡 建议早上起床喝一杯水，每餐前 30 分钟喝一杯水。马来西亚天气炎热，运动或出汗多时需额外补充 300–500ml。':'💡 Drink a glass of water when you wake up and 30 min before each meal. In Malaysia\'s hot weather, add 300–500ml extra when exercising.';
+  const cupsHtml=Array.from({length:Math.min(glasses,12)},(_,i)=>`<span style="font-size:20px">🥤</span>`).join('');
+
+  id('bmi-result').style.display='block';
+  id('bmi-number').textContent=bmi.toFixed(1);
+  id('bmi-number').style.color=color;
+  id('bmi-category').textContent=cat;
+  id('bmi-category').style.color=color;
+  id('bmi-marker').style.left=pct+'%';
+  id('bmi-ideal-range').textContent=`${idealMinDisp} – ${idealMaxDisp} ${unit}`;
+  id('bmi-diff').textContent=`${diff>0?'+':''}${diffVal} ${unit}`;
+  id('bmi-advice').textContent=advice;
+  id('bmi-bmr-val').textContent=bmr;
+  id('bmi-tdee-val').textContent=tdee;
+  setText('bmi-goal-cal-title',zh?'🎯 建议每日摄入（根据目标）':'🎯 Suggested Daily Intake (by goal)');
+  id('bmi-goal-cals').innerHTML=goalData.map(g=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--border-tertiary)"><span style="font-size:12px;color:var(--text-secondary)">${g.label}</span><span style="font-size:13px;font-weight:700;color:${g.color}">${g.cal} kcal</span></div>`).join('');
+  id('bmi-water-val').textContent=waterL;
+  id('bmi-water-unit').textContent=zh?'升 / 天':'L / day';
+  id('bmi-water-glasses').textContent=`= ${glasses} ${zh?'杯 (250ml)':'glasses (250ml)'}`;
+  id('bmi-water-cups').innerHTML=cupsHtml;
+  id('bmi-water-tips').textContent=waterTips;
+  id('bmi-result').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ── Weight Log ──
+async function loadWeightLog(){
+  if(!currentUser)return;
+  try{
+    const data=await fsGet('weightlog',currentUser);
+    renderWeightLog(data&&data.entries?data.entries:[]);
+  }catch(e){renderWeightLog([]);}
+}
+function renderWeightLog(entries){
+  const list=id('weight-log-list');
+  const unit=bmiUnit==='metric'?'kg':'lb';
+  if(!entries||entries.length===0){
+    list.innerHTML=`<div class="empty-state" style="padding:1.5rem" id="weight-no-data">${lang==='zh'?'暂无记录':'No entries yet'}</div>`;
+    return;
+  }
+  const sorted=[...entries].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,30);
+  list.innerHTML=sorted.map((e,i)=>{
+    const prev=sorted[i+1];
+    const diff=prev?((+e.weight)-(+prev.weight)).toFixed(1):null;
+    const diffColor=diff===null?'':(+diff>0?'color:#E24B4A':'color:#639922');
+    const diffStr=diff===null?'':`<span style="font-size:11px;${diffColor};margin-left:6px">${+diff>0?'+':''}${diff} ${unit}</span>`;
+    return`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:0.5px solid var(--border-tertiary)">
+      <span style="font-size:13px;color:var(--text-secondary)">${e.date}</span>
+      <div style="display:flex;align-items:center">
+        <span style="font-size:15px;font-weight:600">${e.weight}</span>
+        <span style="font-size:12px;color:var(--text-secondary);margin-left:3px">${unit}</span>
+        ${diffStr}
+        <button onclick="deleteWeightEntry('${e.date}')" style="margin-left:10px;font-size:11px;padding:3px 8px;border:0.5px solid var(--border-secondary);background:none;color:var(--text-danger);border-radius:99px;cursor:pointer">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function logWeight(){
+  if(!currentUser)return;
+  const val=id('weight-log-input').value.trim();
+  if(!val||isNaN(val)||+val<=0){alert(lang==='zh'?'请输入有效体重':'Please enter a valid weight');return;}
+  spinner(true);
+  try{
+    const data=await fsGet('weightlog',currentUser);
+    const entries=data&&data.entries?data.entries:[];
+    const today=todayStr();
+    const idx=entries.findIndex(e=>e.date===today);
+    if(idx>=0)entries[idx].weight=val;
+    else entries.push({date:today,weight:val});
+    await fsSet('weightlog',currentUser,{user:currentUser,entries});
+    id('weight-log-input').value='';
+    renderWeightLog(entries);
+  }finally{spinner(false);}
+}
+async function deleteWeightEntry(date){
+  if(!confirm(lang==='zh'?`确定删除 ${date} 的记录？`:`Delete entry for ${date}?`))return;
+  spinner(true);
+  try{
+    const data=await fsGet('weightlog',currentUser);
+    const entries=(data&&data.entries?data.entries:[]).filter(e=>e.date!==date);
+    await fsSet('weightlog',currentUser,{user:currentUser,entries});
+    renderWeightLog(entries);
+  }finally{spinner(false);}
+}
+
+// ── Recipe ──
+let selectedGoal='', selectedCats=new Set(), selectedDiets=new Set(), selectedMeals=new Set(['breakfast','lunch','dinner']);
+
+const RECIPE_DATA={
+  goals:{
+    zh:[
+      {id:'lose',icon:'🏃',label:'减重'},
+      {id:'muscle',icon:'💪',label:'增肌'},
+      {id:'maintain',icon:'⚖️',label:'健康维持'},
+      {id:'diabetes',icon:'🩸',label:'糖尿病友好'},
+      {id:'lowcal',icon:'🥗',label:'低卡饮食'},
+      {id:'heart',icon:'❤️',label:'心脏健康'},
+    ],
+    en:[
+      {id:'lose',icon:'🏃',label:'Weight Loss'},
+      {id:'muscle',icon:'💪',label:'Muscle Gain'},
+      {id:'maintain',icon:'⚖️',label:'Healthy Maintain'},
+      {id:'diabetes',icon:'🩸',label:'Diabetes Friendly'},
+      {id:'lowcal',icon:'🥗',label:'Low Calorie'},
+      {id:'heart',icon:'❤️',label:'Heart Healthy'},
+    ]
+  },
+  cats:{
+    zh:[
+      {id:'western',icon:'🍔',label:'西餐'},
+      {id:'chinese',icon:'🍜',label:'中餐'},
+      {id:'kopitiam',icon:'☕',label:'华人茶室档'},
+      {id:'mamak',icon:'🫓',label:'Mamak 档'},
+      {id:'malay',icon:'🍚',label:'马来餐'},
+      {id:'indian',icon:'🍛',label:'印度餐'},
+    ],
+    en:[
+      {id:'western',icon:'🍔',label:'Western'},
+      {id:'chinese',icon:'🍜',label:'Chinese'},
+      {id:'kopitiam',icon:'☕',label:'Kopitiam'},
+      {id:'mamak',icon:'🫓',label:'Mamak'},
+      {id:'malay',icon:'🍚',label:'Malay'},
+      {id:'indian',icon:'🍛',label:'Indian'},
+    ]
+  },
+  diets:{
+    zh:[
+      {id:'halal',icon:'🌙',label:'清真 Halal'},
+      {id:'vegetarian',icon:'🥬',label:'素食'},
+      {id:'vegan',icon:'🌱',label:'纯素'},
+      {id:'no_pork',icon:'🐷',label:'无猪肉'},
+      {id:'no_seafood',icon:'🦐',label:'无海鲜'},
+      {id:'low_sugar',icon:'🍬',label:'低糖'},
+      {id:'low_sodium',icon:'🧂',label:'低钠'},
+      {id:'gluten_free',icon:'🌾',label:'无麸质'},
+    ],
+    en:[
+      {id:'halal',icon:'🌙',label:'Halal'},
+      {id:'vegetarian',icon:'🥬',label:'Vegetarian'},
+      {id:'vegan',icon:'🌱',label:'Vegan'},
+      {id:'no_pork',icon:'🐷',label:'No Pork'},
+      {id:'no_seafood',icon:'🦐',label:'No Seafood'},
+      {id:'low_sugar',icon:'🍬',label:'Low Sugar'},
+      {id:'low_sodium',icon:'🧂',label:'Low Sodium'},
+      {id:'gluten_free',icon:'🌾',label:'Gluten Free'},
+    ]
+  },
+  meals:{
+    zh:[{id:'breakfast',icon:'🌅',label:'早餐'},{id:'lunch',icon:'☀️',label:'午餐'},{id:'dinner',icon:'🌙',label:'晚餐'},{id:'snack',icon:'🍌',label:'小食'}],
+    en:[{id:'breakfast',icon:'🌅',label:'Breakfast'},{id:'lunch',icon:'☀️',label:'Lunch'},{id:'dinner',icon:'🌙',label:'Dinner'},{id:'snack',icon:'🍌',label:'Snack'}]
+  }
+};
+
+function renderRecipeUI(){
+  const zh=lang==='zh';
+  setText('recipe-hero-title',zh?'🍱 智能食谱生成':'🍱 Smart Recipe Generator');
+  setText('recipe-hero-sub',zh?'马来西亚本地健康外卖参考 · AI 定制推荐':'Malaysia local healthy takeaway guide · AI customised');
+  setText('recipe-goal-title',zh?'🎯 健康目标':'🎯 Health Goal');
+  setText('recipe-cat-title',zh?'🏪 外卖分类（可多选）':'🏪 Food Category (multi-select)');
+  setText('recipe-diet-title',zh?'🥗 饮食限制（可多选）':'🥗 Dietary Needs (multi-select)');
+  setText('recipe-cal-title',zh?'🔥 每日卡路里目标':'🔥 Daily Calorie Target');
+  setText('recipe-meal-title',zh?'🕐 餐次':'🕐 Meals');
+  setText('recipe-gen-btn',zh?'✨ 生成食谱':'✨ Generate Recipe');
+
+  // Goals
+  const goals=RECIPE_DATA.goals[zh?'zh':'en'];
+  id('recipe-goals').innerHTML=goals.map(g=>`
+    <button onclick="selectGoal('${g.id}',this)" data-id="${g.id}" style="padding:10px 8px;border:1.5px solid ${selectedGoal===g.id?'var(--teal)':'var(--border-secondary)'};background:${selectedGoal===g.id?'var(--bg-info)':'var(--bg-primary)'};color:${selectedGoal===g.id?'var(--teal)':'var(--text-secondary)'};border-radius:var(--radius-lg);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px">
+      <span style="font-size:18px">${g.icon}</span>${g.label}
+    </button>`).join('');
+
+  // Categories
+  const cats=RECIPE_DATA.cats[zh?'zh':'en'];
+  id('recipe-cats').innerHTML=cats.map(c=>`
+    <button onclick="toggleCat('${c.id}',this)" data-id="${c.id}" style="padding:10px 8px;border:1.5px solid ${selectedCats.has(c.id)?'var(--teal)':'var(--border-secondary)'};background:${selectedCats.has(c.id)?'var(--bg-info)':'var(--bg-primary)'};color:${selectedCats.has(c.id)?'var(--teal)':'var(--text-secondary)'};border-radius:var(--radius-lg);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px">
+      <span style="font-size:18px">${c.icon}</span>${c.label}
+    </button>`).join('');
+
+  // Diets
+  const diets=RECIPE_DATA.diets[zh?'zh':'en'];
+  id('recipe-diets').innerHTML=diets.map(d=>`
+    <button onclick="toggleDiet('${d.id}',this)" data-id="${d.id}" style="padding:7px 12px;border:1.5px solid ${selectedDiets.has(d.id)?'var(--teal)':'var(--border-secondary)'};background:${selectedDiets.has(d.id)?'var(--bg-info)':'var(--bg-primary)'};color:${selectedDiets.has(d.id)?'var(--teal)':'var(--text-secondary)'};border-radius:99px;font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px">
+      <span>${d.icon}</span>${d.label}
+    </button>`).join('');
+
+  // Meals
+  const meals=RECIPE_DATA.meals[zh?'zh':'en'];
+  id('recipe-meals').innerHTML=meals.map(m=>`
+    <button onclick="toggleMeal('${m.id}',this)" data-id="${m.id}" style="flex:1;padding:9px 4px;border:1.5px solid ${selectedMeals.has(m.id)?'var(--teal)':'var(--border-secondary)'};background:${selectedMeals.has(m.id)?'var(--bg-info)':'var(--bg-primary)'};color:${selectedMeals.has(m.id)?'var(--teal)':'var(--text-secondary)'};border-radius:var(--radius-md);font-size:12px;font-weight:500;cursor:pointer;text-align:center">
+      <div style="font-size:18px">${m.icon}</div>${m.label}
+    </button>`).join('');
+}
+
+function selectGoal(gid, btn){
+  selectedGoal=gid;
+  renderRecipeUI();
+}
+function toggleCat(cid, btn){
+  if(selectedCats.has(cid))selectedCats.delete(cid);else selectedCats.add(cid);
+  renderRecipeUI();
+}
+function toggleDiet(did, btn){
+  if(selectedDiets.has(did))selectedDiets.delete(did);else selectedDiets.add(did);
+  renderRecipeUI();
+}
+function toggleMeal(mid, btn){
+  if(selectedMeals.has(mid))selectedMeals.delete(mid);else selectedMeals.add(mid);
+  renderRecipeUI();
+}
+
+async function generateRecipe(){
+  if(!selectedGoal){alert(lang==='zh'?'请选择健康目标':'Please select a health goal');return;}
+  if(selectedCats.size===0){alert(lang==='zh'?'请选择至少一个外卖分类':'Please select at least one food category');return;}
+  if(selectedMeals.size===0){alert(lang==='zh'?'请选择至少一个餐次':'Please select at least one meal');return;}
+
+  const zh=lang==='zh';
+  const calTarget=id('recipe-cal-slider').value;
+  const btn=id('recipe-gen-btn');
+  btn.disabled=true;
+  btn.innerHTML='<span class="loading-dots"><span></span><span></span><span></span></span> '+(zh?'生成中...':'Generating...');
+  id('recipe-result').style.display='none';
+
+  const goalMap={lose:zh?'减重':'weight loss',muscle:zh?'增肌':'muscle gain',maintain:zh?'健康维持':'healthy maintenance',diabetes:zh?'糖尿病友好':'diabetes friendly',lowcal:zh?'低卡饮食':'low calorie',heart:zh?'心脏健康':'heart healthy'};
+  const catMap={western:zh?'西餐':'Western food',chinese:zh?'中餐':'Chinese food',kopitiam:zh?'华人茶室档':'Kopitiam stall',mamak:'Mamak stall',malay:zh?'马来餐':'Malay food',indian:zh?'印度餐':'Indian food'};
+  const dietMap={halal:'Halal',vegetarian:zh?'素食':'Vegetarian',vegan:zh?'纯素':'Vegan',no_pork:zh?'无猪肉':'No pork',no_seafood:zh?'无海鲜':'No seafood',low_sugar:zh?'低糖':'Low sugar',low_sodium:zh?'低钠':'Low sodium',gluten_free:zh?'无麸质':'Gluten free'};
+  const mealMap={breakfast:zh?'早餐':'Breakfast',lunch:zh?'午餐':'Lunch',dinner:zh?'晚餐':'Dinner',snack:zh?'小食':'Snack'};
+
+  const goalStr=goalMap[selectedGoal];
+  const catsStr=[...selectedCats].map(c=>catMap[c]).join(', ');
+  const dietsStr=selectedDiets.size>0?[...selectedDiets].map(d=>dietMap[d]).join(', '):(zh?'无特别限制':'No restrictions');
+  const mealsStr=[...selectedMeals].map(m=>mealMap[m]).join(', ');
+  const replyLang=zh?'请用中文回复所有内容。':'Reply entirely in English.';
+
+  const prompt=`You are a Malaysian nutrition expert. Generate a healthy takeaway meal plan for one day based on these requirements:
+- Health goal: ${goalStr}
+- Daily calorie target: ${calTarget} kcal
+- Food categories to choose from (Malaysia local takeaway): ${catsStr}
+- Dietary restrictions: ${dietsStr}
+- Meals needed: ${mealsStr}
+- Location: Malaysia
+
+${replyLang}
+
+Reply ONLY in this exact JSON format (no extra text):
+{
+  "plan_title": "meal plan title",
+  "total_calories": number,
+  "meals": [
+    {
+      "meal_type": "breakfast/lunch/dinner/snack",
+      "meal_label": "meal name in local language",
+      "category": "food category (e.g. Kopitiam/Mamak/Western etc)",
+      "dishes": [
+        {
+          "name": "dish name",
+          "description": "brief description and where to order",
+          "calories": number,
+          "protein": number,
+          "carbs": number,
+          "fat": number,
+          "tip": "ordering tip or healthy modification"
+        }
+      ],
+      "meal_calories": number
+    }
+  ],
+  "nutrition_summary": {"protein": number, "carbs": number, "fat": number},
+  "health_tips": ["tip1", "tip2", "tip3"],
+  "avoid": ["food to avoid 1", "food to avoid 2"]
+}`;
+
+  try{
+    const d=await callGemini([],prompt);
+    showRecipeResult(d);
+  }catch(e){if(e.message!=='no-key')alert((zh?'生成失败：':'Generation failed: ')+e.message);}
+  finally{
+    btn.disabled=false;
+    btn.textContent=zh?'✨ 重新生成':'✨ Regenerate';
+  }
+}
+
+function showRecipeResult(d){
+  const zh=lang==='zh';
+  const sec=id('recipe-result');
+  sec.style.display='block';
+
+  const mealIcons={breakfast:'🌅',lunch:'☀️',dinner:'🌙',snack:'🍌'};
+  const catColors={
+    'Western':'#185FA5','Chinese':'#C0392B','Kopitiam':'#8B4513','Mamak':'#27AE60',
+    'Malay':'#E67E22','Indian':'#8E44AD',
+    '西餐':'#185FA5','中餐':'#C0392B','华人茶室档':'#8B4513','Mamak 档':'#27AE60',
+    '马来餐':'#E67E22','印度餐':'#8E44AD'
+  };
+
+  const mealsHtml=d.meals.map(meal=>{
+    const icon=mealIcons[meal.meal_type]||'🍽';
+    const catColor=catColors[meal.category]||'var(--teal)';
+    const dishesHtml=meal.dishes.map(dish=>`
+      <div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:10px 12px;margin-bottom:8px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px">
+          <div style="font-size:14px;font-weight:600;flex:1">${dish.name}</div>
+          <span style="font-size:13px;font-weight:700;color:var(--teal);margin-left:8px;white-space:nowrap">${dish.calories} kcal</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px">${dish.description}</div>
+        <div style="display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+          <span style="font-size:11px;padding:2px 8px;background:#EAF3DE;color:#27500A;border-radius:99px">${zh?'蛋白质':'Protein'} ${dish.protein}g</span>
+          <span style="font-size:11px;padding:2px 8px;background:#E6F1FB;color:#185FA5;border-radius:99px">${zh?'碳水':'Carbs'} ${dish.carbs}g</span>
+          <span style="font-size:11px;padding:2px 8px;background:#FAEEDA;color:#633806;border-radius:99px">${zh?'脂肪':'Fat'} ${dish.fat}g</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-info);background:var(--bg-info);padding:6px 10px;border-radius:var(--radius-md)">💡 ${dish.tip}</div>
+      </div>`).join('');
+
+    return`<div style="background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:1rem;margin-bottom:.75rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:22px">${icon}</span>
+          <div>
+            <div style="font-size:14px;font-weight:700">${meal.meal_label}</div>
+            <span style="font-size:11px;padding:2px 8px;border-radius:99px;color:#fff;background:${catColor}">${meal.category}</span>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:16px;font-weight:700;color:var(--teal)">${meal.meal_calories}</div>
+          <div style="font-size:11px;color:var(--text-tertiary)">kcal</div>
+        </div>
+      </div>
+      ${dishesHtml}
+    </div>`;
+  }).join('');
+
+  const tips=(d.health_tips||[]).map(t=>`<div style="display:flex;gap:8px;margin-bottom:6px"><span style="color:var(--teal);flex-shrink:0">✓</span><span style="font-size:13px;color:var(--text-secondary)">${t}</span></div>`).join('');
+  const avoids=(d.avoid||[]).map(a=>`<div style="display:flex;gap:8px;margin-bottom:6px"><span style="color:#E24B4A;flex-shrink:0">✕</span><span style="font-size:13px;color:var(--text-secondary)">${a}</span></div>`).join('');
+
+  sec.innerHTML=`
+    <!-- Summary Card -->
+    <div style="background:linear-gradient(135deg,#1a6b8a,#0d4f68);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem;color:#fff">
+      <div style="font-size:15px;font-weight:700;margin-bottom:10px">${d.plan_title}</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center">
+        <div><div style="font-size:20px;font-weight:700">${d.total_calories}</div><div style="font-size:10px;opacity:.8">kcal</div></div>
+        <div><div style="font-size:20px;font-weight:700">${d.nutrition_summary?.protein||0}g</div><div style="font-size:10px;opacity:.8">${zh?'蛋白质':'Protein'}</div></div>
+        <div><div style="font-size:20px;font-weight:700">${d.nutrition_summary?.carbs||0}g</div><div style="font-size:10px;opacity:.8">${zh?'碳水':'Carbs'}</div></div>
+        <div><div style="font-size:20px;font-weight:700">${d.nutrition_summary?.fat||0}g</div><div style="font-size:10px;opacity:.8">${zh?'脂肪':'Fat'}</div></div>
+      </div>
+    </div>
+
+    <!-- Meals -->
+    ${mealsHtml}
+
+    <!-- Tips -->
+    <div style="background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:1rem;margin-bottom:.75rem">
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px">💡 ${zh?'健康小贴士':'Health Tips'}</div>
+      ${tips}
+    </div>
+
+    <!-- Avoid -->
+    <div style="background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:1rem;margin-bottom:1rem">
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px">⚠️ ${zh?'建议避免':'Foods to Avoid'}</div>
+      ${avoids}
+    </div>`;
+
+  sec.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ── About ──
+function renderAbout(){
+  const el=id('about-logo');if(el)el.src=LOGO_SRC;
+
+  const isZh=lang==='zh';
+
+  // Hero
+  setText('about-hero-title', isZh?'数据配合 — 使你更精准有效':'Data-Driven Precision for Your Health');
+  setText('about-hero-desc', isZh
+    ?'研究显示，热量摄入过高与新陈代谢过低是现代人体重增加的主要原因。Niva 用 AI 帮你实时追踪每餐营养与每次运动，让健康管理更科学、更有效。'
+    :'Research shows excess calorie intake and low metabolism are the leading causes of weight gain. Niva uses AI to track your nutrition and workouts in real time — making health management smarter and more effective.');
+
+  // Problems
+  setText('about-prob-title', isZh?'🔍 你是否面临这些问题？':'🔍 Do These Sound Familiar?');
+  const problems=isZh?[
+    {icon:'🍔',text:'吃进去的热量太多，不知道每餐摄入了多少'},
+    {icon:'😴',text:'新陈代谢变慢，运动效果不明显'},
+    {icon:'📉',text:'饮食结构失衡，高油高糖，缺乏膳食纤维'},
+    {icon:'🏋️',text:'缺乏运动数据，不知道消耗了多少卡路里'},
+  ]:[
+    {icon:'🍔',text:'Eating too much without knowing your daily calorie intake'},
+    {icon:'😴',text:'Slowing metabolism with little visible exercise results'},
+    {icon:'📉',text:'Unbalanced diet — too much fat and sugar, not enough fiber'},
+    {icon:'🏋️',text:'No workout data — unsure how many calories you actually burn'},
+  ];
+  id('about-problems').innerHTML=problems.map(p=>`
+    <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px">
+      <span style="font-size:20px;flex-shrink:0">${p.icon}</span>
+      <span style="font-size:13px;color:var(--text-secondary);line-height:1.5">${p.text}</span>
+    </div>`).join('');
+
+  // Solutions
+  setText('about-sol-title', isZh?'✨ Niva 如何帮助你':'✨ How Niva Helps You');
+  const solutions=isZh?[
+    {icon:'📸',title:'拍照识别食物',desc:'拍一张照片，AI 即时分析卡路里、碳水、蛋白质、脂肪与健康评分。'},
+    {icon:'🏃',title:'运动姿势分析',desc:'录制运动视频，AI 分析动作姿势、消耗卡路里并给出改善建议。'},
+    {icon:'📔',title:'健康日记追踪',desc:'每次分析自动记录，月历视图让你清楚看到每天的健康趋势。'},
+    {icon:'🎯',title:'精准数据管理',desc:'云端存储所有数据，随时随地回顾，让健康管理有据可依。'},
+  ]:[
+    {icon:'📸',title:'Photo Food Analysis',desc:'Snap a photo — AI instantly analyses calories, carbs, protein, fat and health score.'},
+    {icon:'🏃',title:'Exercise Form Analysis',desc:'Record a workout — AI analyses your form, estimates calorie burn and suggests improvements.'},
+    {icon:'📔',title:'Health Diary Tracking',desc:'Every analysis is saved. A calendar view shows your daily health trends at a glance.'},
+    {icon:'🎯',title:'Precision Data Management',desc:'Cloud storage keeps all your data synced — review anytime, anywhere.'},
+  ];
+  id('about-solutions').innerHTML=solutions.map(s=>`
+    <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;padding-bottom:12px;border-bottom:0.5px solid var(--border-tertiary)">
+      <div style="width:40px;height:40px;border-radius:10px;background:var(--bg-info);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${s.icon}</div>
+      <div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:3px">${s.title}</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.5">${s.desc}</div>
+      </div>
+    </div>`).join('').replace(/border-bottom:0\.5px solid var\(--border-tertiary\)"><\/div>\s*$/, '"><\/div>');
+
+  // Stats
+  setText('about-stat-title', isZh?'📊 健康数据告诉你':'📊 The Numbers Speak');
+  const stats=isZh?[
+    {num:'70%',desc:'人因饮食不均衡\n导致体重超标'},
+    {num:'2×',desc:'追踪饮食的人\n减重效果翻倍'},
+    {num:'30%',desc:'规律运动可提升\n新陈代谢率'},
+    {num:'56天',desc:'坚持健康管理\n可见显著改变'},
+  ]:[
+    {num:'70%',desc:'of people are overweight\ndue to poor diet'},
+    {num:'2×',desc:'better weight loss\nwhen tracking food'},
+    {num:'30%',desc:'metabolism boost\nwith regular exercise'},
+    {num:'56days',desc:'of healthy habits\nfor visible change'},
+  ];
+  id('about-stats').innerHTML=stats.map(s=>`
+    <div style="background:var(--bg-secondary);border-radius:var(--radius-lg);padding:14px 12px;text-align:center">
+      <div style="font-size:24px;font-weight:700;color:var(--teal)">${s.num}</div>
+      <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;line-height:1.4;white-space:pre-line">${s.desc}</div>
+    </div>`).join('');
+
+  // Features
+  setText('about-feat-title', isZh?'🚀 核心功能':'🚀 Core Features');
+  const features=isZh?[
+    {icon:'🍽',title:'食物卡路里分析',desc:'拍照或上传食物图片，AI 即时分析卡路里、营养素与健康评分。'},
+    {icon:'🏃',title:'AI 智能运动分析',desc:'录制或上传运动视频，分析动作姿势、消耗卡路里与改善建议。'},
+    {icon:'📔',title:'健康日记',desc:'每次分析可选择保存，月历与列表双视图回顾每天健康数据。'},
+    {icon:'🔒',title:'云端账号系统',desc:'注册账号，管理员审批后即可使用，数据安全存于云端。'},
+  ]:[
+    {icon:'🍽',title:'Food Calorie Analysis',desc:'Photo or upload food images. AI analyses calories, nutrients and health score instantly.'},
+    {icon:'🏃',title:'AI Exercise Analysis',desc:'Record or upload workout videos. Get posture feedback, calorie burn and tips.'},
+    {icon:'📔',title:'Health Diary',desc:'Save results to your diary. Review data in calendar or list view.'},
+    {icon:'🔒',title:'Cloud Account System',desc:'Secure accounts with admin approval. All data safely stored in the cloud.'},
+  ];
+  id('about-features').innerHTML=features.map(f=>`
+    <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;padding-bottom:12px;border-bottom:0.5px solid var(--border-tertiary)">
+      <div style="width:40px;height:40px;border-radius:10px;background:var(--bg-success);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${f.icon}</div>
+      <div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:3px">${f.title}</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.5">${f.desc}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── INIT ──
+async function init(){
+  document.querySelectorAll('img[alt="Niva"]').forEach(img=>img.src=LOGO_SRC);
+  const savedLang=lsGet('lang');
+  if(savedLang)lang=savedLang;
+  document.querySelectorAll('.lang-btn').forEach(b=>{b.classList.toggle('active',b.textContent.trim()===(lang==='zh'?'中文':'English'));});
+  applyLang();
+  const seenIntro=lsGet('seen-intro');
+  if(!seenIntro){showScreen('screen-intro');return;}
+  const session=lsGet('session');
+  if(session){
+    try{
+      const s=JSON.parse(session);
+      if(s.username===ADMIN_USER){await loadAdmin();await loadAdminKey();showScreen('screen-admin');return;}
+      spinner(true);
+      const udata=await fsGet('users',s.username);
+      spinner(false);
+      if(udata&&udata.status==='approved'){
+        if(udata.role==='admin'){await loadAdmin();await loadAdminKey();showScreen('screen-admin');return;}
+        if(udata.role==='dealer'){await startDealerSession(s.username,udata);return;}
+        await startUserSession(s.username,udata);return;
+      }
+    }catch(e){spinner(false);}
+  }
+  showScreen('screen-login');
+}
+init();
+</script>
+</body>
+</html>
