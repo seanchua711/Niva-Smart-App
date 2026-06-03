@@ -396,9 +396,9 @@ video.live{width:100%;border-radius:var(--radius-lg);border:0.5px solid var(--bo
         <video class="live" id="food-video" autoplay playsinline></video>
         <canvas id="food-canvas" style="display:none"></canvas>
         <div class="preview-wrap" id="food-preview"><img id="food-img" src="" alt=""><button class="rm-btn" onclick="clearFood()">✕</button></div>
-        <label class="field-lbl" id="food-hint-lbl">✏️ 补充说明（可选）</label>
-        <input class="hint-input" type="text" id="food-hint">
-        <button class="analyze-btn" id="food-btn" onclick="analyzeFood()" disabled>✨ <span id="food-btn-text">分析食物</span></button>
+        <label class="field-lbl" id="food-hint-lbl">✏️ 用文字描述食物（或补充说明）</label>
+        <input class="hint-input" type="text" id="food-hint" oninput="onFoodHintInput()">
+        <button class="analyze-btn" id="food-btn" onclick="analyzeFood()">✨ <span id="food-btn-text">分析食物</span></button>
         <div class="result-section" id="food-result"><div class="stat-grid" id="food-stats"></div><div id="food-cards"></div></div>
       </div>
       <div class="panel" id="panel-sport">
@@ -884,7 +884,7 @@ const T={
     aiTab:'AI 分析',diaryTab:'日记',aboutTab:'关于',bmiTab:'BMI',recipeTab:'食谱',
     foodTab:'🍽 食物分析',sportTab:'🏃 运动分析',
     foodUpload:'点击上传或拖拽食物图片',takePic:'📸 拍照',
-    foodHint:'✏️ 补充说明（可选）',foodHintPh:'例如：炒饭 + 煎蛋，不加酱汁',
+    foodHint:'✏️ 用文字描述食物（或补充说明）',foodHintPh:'例如：炒饭 + 煎蛋，不加酱汁 / 或直接输入食物名称',
     analyzeFood:'分析食物',analyzingFood:'分析中...',reanalyze:'重新分析',
     sportUpload:'点击上传或拖拽运动视频',record:'🎬 录制',
     sportNotice:'ℹ️ 建议视频 30 秒内，可用语音或文字描述运动内容辅助分析。',
@@ -933,7 +933,7 @@ const T={
     aiTab:'AI Analysis',diaryTab:'Diary',aboutTab:'About',bmiTab:'BMI',recipeTab:'Recipe',
     foodTab:'🍽 Food',sportTab:'🏃 Exercise',
     foodUpload:'Tap to upload or drag a food photo',takePic:'📸 Camera',
-    foodHint:'✏️ Add note (optional)',foodHintPh:'e.g. Fried rice + egg, no sauce',
+    foodHint:'✏️ Describe food in text (or add notes)',foodHintPh:'e.g. Nasi Lemak with egg / or just type the food name',
     analyzeFood:'Analyse Food',analyzingFood:'Analysing...',reanalyze:'Re-analyse',
     sportUpload:'Tap to upload or drag a workout video',record:'🎬 Record',
     sportNotice:'ℹ️ Videos under 30 seconds work best. Add voice or text notes to assist analysis.',
@@ -1438,7 +1438,7 @@ function switchMainTab(tab,el){
   id('tab-about').style.display=tab==='about'?'block':'none';
   if(tab==='diary'){renderCalendar();renderDiaryList(selectedDate);}
   if(tab==='about'){renderAbout();}
-  if(tab==='bmi'){renderBmiLang();loadWeightLog();}
+  if(tab==='bmi'){renderBmiLang();loadWeightLog();loadBmiResult();}
   if(tab==='recipe'){renderRecipeUI();}
 }
 
@@ -1447,8 +1447,13 @@ function ev(e){e.preventDefault();}
 function dropFood(e){e.preventDefault();const f=e.dataTransfer.files[0];if(f)readFoodFile(f);}
 function loadFoodFile(inp){if(inp.files[0])readFoodFile(inp.files[0]);}
 function readFoodFile(f){stopFoodCam();const r=new FileReader();r.onload=e=>setFoodImg(e.target.result);r.readAsDataURL(f);}
+function onFoodHintInput(){
+  // Enable analyze button if there's text OR a photo
+  const hasText=id('food-hint').value.trim().length>0;
+  if(!foodB64) id('food-btn').disabled=!hasText;
+}
 function setFoodImg(d){foodB64=d;id('food-img').src=d;id('food-preview').style.display='block';document.querySelector('#panel-food .upload-zone').style.display='none';id('food-btn').disabled=false;id('food-result').style.display='none';}
-function clearFood(){foodB64=null;id('food-preview').style.display='none';document.querySelector('#panel-food .upload-zone').style.display='block';id('food-btn').disabled=true;id('food-file').value='';}
+function clearFood(){foodB64=null;id('food-preview').style.display='none';document.querySelector('#panel-food .upload-zone').style.display='block';const hasText=id('food-hint').value.trim().length>0;id('food-btn').disabled=!hasText;id('food-file').value='';}
 async function startFoodCam(){try{foodStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});const v=id('food-video');v.srcObject=foodStream;v.style.display='block';id('food-snap').style.display='';id('food-stop').style.display='';document.querySelector('#panel-food .upload-zone').style.display='none';}catch(e){alert('Camera error: '+e.message);}}
 function snapFood(){const v=id('food-video'),c=id('food-canvas');c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);setFoodImg(c.toDataURL('image/jpeg',0.85));stopFoodCam();}
 function stopFoodCam(){if(foodStream){foodStream.getTracks().forEach(t=>t.stop());foodStream=null;}id('food-video').style.display='none';id('food-snap').style.display='none';id('food-stop').style.display='none';if(!foodB64)document.querySelector('#panel-food .upload-zone').style.display='block';}
@@ -1565,14 +1570,27 @@ function dismissSave(e){if(e.target===id('save-overlay'))closeSave();}
 
 // ── Food Analysis ──
 async function analyzeFood(){
-  if(!foodB64){alert(t('noPhoto'));return;}
-  const hint=id('food-hint').value.trim(),btn=id('food-btn'),bt=id('food-btn-text');
+  const hint=id('food-hint').value.trim();
+  if(!foodB64&&!hint){
+    alert(lang==='zh'?'请上传食物图片，或在文字框输入食物名称':'Please upload a food photo or type the food name in the text box');
+    return;
+  }
+  const btn=id('food-btn'),bt=id('food-btn-text');
   btn.disabled=true;bt.innerHTML='<span class="loading-dots"><span></span><span></span><span></span></span> '+t('analyzingFood');
-  const b64=foodB64.split(',')[1],mime=foodB64.split(';')[0].split(':')[1];
   const langInstruct=lang==='zh'?'请用中文回复所有文字字段（food_name, serving_size, health_summary, highlights text, suggestion）。':'Reply all text fields in English (food_name, serving_size, health_summary, highlights text, suggestion).';
-  const prompt=`You are a professional nutritionist. Analyse this food image${hint?`, user note: "${hint}"`:''}. ${langInstruct} Reply ONLY in JSON: {"food_name":"name","confidence":"high/medium/low","total_calories":number,"serving_size":"size","macros":{"carbs":number,"protein":number,"fat":number,"fiber":number},"health_score":number_1_to_10,"health_summary":"2-3 sentences","highlights":[{"text":"point","type":"good/warn/bad"}],"suggestion":"1-2 sentences"}`;
+  let parts=[];
+  let prompt='';
+  if(foodB64){
+    // Photo + optional text
+    const b64=foodB64.split(',')[1],mime=foodB64.split(';')[0].split(':')[1];
+    parts=[{inline_data:{mime_type:mime,data:b64}}];
+    prompt=`You are a professional nutritionist. Analyse this food image${hint?`, user note: "${hint}"`:''}. ${langInstruct} Reply ONLY in JSON: {"food_name":"name","confidence":"high/medium/low","total_calories":number,"serving_size":"size","macros":{"carbs":number,"protein":number,"fat":number,"fiber":number},"health_score":number_1_to_10,"health_summary":"2-3 sentences","highlights":[{"text":"point","type":"good/warn/bad"}],"suggestion":"1-2 sentences"}`;
+  } else {
+    // Text only
+    prompt=`You are a professional nutritionist. The user has described a food: "${hint}". Analyse the nutritional content based on this description. ${langInstruct} Reply ONLY in JSON: {"food_name":"name","confidence":"medium","total_calories":number,"serving_size":"typical serving size","macros":{"carbs":number,"protein":number,"fat":number,"fiber":number},"health_score":number_1_to_10,"health_summary":"2-3 sentences","highlights":[{"text":"point","type":"good/warn/bad"}],"suggestion":"1-2 sentences"}`;
+  }
   try{
-    const d=await callGemini([{inline_data:{mime_type:mime,data:b64}}],prompt);
+    const d=await callGemini(parts,prompt);
     showFoodResult(d);
     showSaveDialog({type:'food',name:d.food_name,calories:Math.round(d.total_calories),protein:Math.round(d.macros.protein),carbs:Math.round(d.macros.carbs),fat:Math.round(d.macros.fat),time:new Date().toLocaleTimeString(lang==='zh'?'zh-CN':'en-US',{hour:'2-digit',minute:'2-digit'})});
   }catch(e){if(e.message!=='no-key')alert(t('analyzeFail')+e.message);}
@@ -1784,6 +1802,100 @@ function calcBmi(){
   id('bmi-water-cups').innerHTML=cupsHtml;
   id('bmi-water-tips').textContent=waterTips;
   id('bmi-result').scrollIntoView({behavior:'smooth',block:'start'});
+
+  // Save BMI result to Firebase
+  if(currentUser){
+    const bmiData={
+      bmi:parseFloat(bmi.toFixed(1)),cat,color,pct,
+      bmiNumber:bmi.toFixed(1),
+      idealRange:`${idealMinDisp} – ${idealMaxDisp} ${unit}`,
+      diff:`${diff>0?'+':''}${diffVal} ${unit}`,
+      advice,bmr,tdee,waterL,glasses,
+      goalCals:goalData.map(g=>({label:g.label,cal:g.cal,color:g.color})),
+      waterTips,cupsCount:Math.min(glasses,12),
+      // Save inputs so we can restore them
+      inputs:{gender:bmiGender,unit:bmiUnit,activity:bmiActivity,actFactor:bmiActivityFactor,
+        age:id('age-input').value,
+        heightCm:id('height-input').value,
+        weightKg:id('weight-input').value,
+        heightFt:id('height-ft').value,
+        heightIn:id('height-in').value,
+        weightLb:id('weight-lb').value,
+      },
+      savedAt:new Date().toLocaleDateString()
+    };
+    fsSet('bmiresult',currentUser,bmiData).catch(()=>{});
+  }
+}
+
+// ── Load saved BMI ──
+async function loadBmiResult(){
+  if(!currentUser)return;
+  try{
+    const d=await fsGet('bmiresult',currentUser);
+    if(!d)return;
+    const zh=lang==='zh';
+
+    // Restore inputs
+    if(d.inputs){
+      bmiGender=d.inputs.gender||'male';
+      bmiUnit=d.inputs.unit||'metric';
+      bmiActivity=d.inputs.activity||'moderate';
+      bmiActivityFactor=d.inputs.actFactor||1.55;
+      if(d.inputs.age){id('age-input').value=d.inputs.age;id('age-slider').value=d.inputs.age;}
+      if(d.inputs.heightCm){id('height-input').value=d.inputs.heightCm;id('height-slider').value=d.inputs.heightCm;}
+      if(d.inputs.weightKg){id('weight-input').value=d.inputs.weightKg;id('weight-slider').value=d.inputs.weightKg;}
+      if(d.inputs.heightFt)id('height-ft').value=d.inputs.heightFt;
+      if(d.inputs.heightIn)id('height-in').value=d.inputs.heightIn;
+      if(d.inputs.weightLb)id('weight-lb').value=d.inputs.weightLb;
+      // Sync unit display
+      if(bmiUnit==='imperial'){
+        id('height-metric-wrap').style.display='none';id('height-imperial-wrap').style.display='block';
+        id('weight-metric-wrap').style.display='none';id('weight-imperial-wrap').style.display='block';
+      }
+      // Sync gender buttons
+      const maleBtn=id('gender-male'),femaleBtn=id('gender-female');
+      if(bmiGender==='male'){
+        maleBtn.style.border='1.5px solid var(--teal)';maleBtn.style.background='var(--bg-info)';maleBtn.style.color='var(--teal)';
+        femaleBtn.style.border='0.5px solid var(--border-secondary)';femaleBtn.style.background='var(--bg-primary)';femaleBtn.style.color='var(--text-secondary)';
+      } else {
+        femaleBtn.style.border='1.5px solid var(--teal)';femaleBtn.style.background='var(--bg-info)';femaleBtn.style.color='var(--teal)';
+        maleBtn.style.border='0.5px solid var(--border-secondary)';maleBtn.style.background='var(--bg-primary)';maleBtn.style.color='var(--text-secondary)';
+      }
+      renderBmiLang(); // re-render activity with correct selection
+    }
+
+    // Restore result display
+    id('bmi-result').style.display='block';
+    id('bmi-number').textContent=d.bmiNumber||d.bmi;
+    id('bmi-number').style.color=d.color;
+    id('bmi-category').textContent=d.cat;
+    id('bmi-category').style.color=d.color;
+    id('bmi-marker').style.left=d.pct+'%';
+    id('bmi-ideal-range').textContent=d.idealRange;
+    id('bmi-diff').textContent=d.diff;
+    id('bmi-advice').textContent=d.advice;
+    id('bmi-bmr-val').textContent=d.bmr;
+    id('bmi-tdee-val').textContent=d.tdee;
+    setText('bmi-goal-cal-title',zh?'🎯 建议每日摄入（根据目标）':'🎯 Suggested Daily Intake (by goal)');
+    id('bmi-goal-cals').innerHTML=(d.goalCals||[]).map(g=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--border-tertiary)"><span style="font-size:12px;color:var(--text-secondary)">${g.label}</span><span style="font-size:13px;font-weight:700;color:${g.color}">${g.cal} kcal</span></div>`).join('');
+    id('bmi-water-val').textContent=d.waterL;
+    id('bmi-water-unit').textContent=zh?'升 / 天':'L / day';
+    id('bmi-water-glasses').textContent=`= ${d.glasses} ${zh?'杯 (250ml)':'glasses (250ml)'}`;
+    id('bmi-water-cups').innerHTML=Array.from({length:d.cupsCount||0},()=>`<span style="font-size:20px">🥤</span>`).join('');
+    id('bmi-water-tips').textContent=d.waterTips;
+
+    // Show saved date hint
+    if(d.savedAt){
+      const hint=document.createElement('div');
+      hint.style.cssText='font-size:11px;color:var(--text-tertiary);text-align:center;margin-top:-8px;margin-bottom:8px';
+      hint.textContent=(zh?'上次计算：':'Last calculated: ')+d.savedAt;
+      const existingHint=id('bmi-saved-hint');
+      if(existingHint)existingHint.remove();
+      hint.id='bmi-saved-hint';
+      id('bmi-result').prepend(hint);
+    }
+  }catch(e){}
 }
 
 // ── Weight Log ──
