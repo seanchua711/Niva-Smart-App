@@ -1,21 +1,23 @@
 {
-  "name": "Niva 健康 AI 助手",
+  "name": "Niva Health AI",
   "short_name": "Niva",
-  "description": "数据配合 — 使你更精准有效",
-  "start_url": "/",
+  "description": "AI-powered food and exercise analyser with health diary for Malaysian lifestyle",
+  "start_url": "/Niva-Smart-App/index.html",
+  "scope": "/Niva-Smart-App/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1a6b8a",
   "orientation": "portrait",
+  "id": "com.nivahealth.app",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "https://seanchua711.github.io/Niva-Smart-App/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "icon-512.png",
+      "src": "https://seanchua711.github.io/Niva-Smart-App/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
