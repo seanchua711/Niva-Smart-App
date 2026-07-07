@@ -1554,7 +1554,7 @@ function toggleVoice(){
 // ── Gemini ──
 async function callGemini(parts,prompt){
   if(!geminiKey){alert('⚠️ '+t('noKey'));throw new Error('no-key');}
-  const models=['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-1.5-flash'];
+  const models=['gemini-2.0-flash','gemini-2.0-flash-lite','gemini-1.5-flash-latest'];
   let lastErr='';
   for(const model of models){
     try{
