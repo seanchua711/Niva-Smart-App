@@ -297,6 +297,9 @@ video.live{width:100%;border-radius:var(--radius-lg);border:0.5px solid var(--bo
     </div>
   </div>
   <div class="card">
+    <button class="analyze-btn" onclick="openMainForStaff('admin')" id="ad-try-ai" style="margin:0">🍽 <span id="ad-try-ai-txt">试用 AI 分析功能</span></button>
+  </div>
+  <div class="card">
     <div class="section-title" id="ad-key-title">🔑 Gemini API Key</div>
     <p style="font-size:13px;color:var(--text-secondary);margin-bottom:10px" id="ad-key-desc">设置后所有已批准的用户无需填写即可直接使用 AI 功能。</p>
     <div class="key-section">
@@ -337,6 +340,10 @@ video.live{width:100%;border-radius:var(--radius-lg);border:0.5px solid var(--bo
     <div style="font-size:12px;opacity:.75;margin-top:6px" id="dealer-code-desc">用户注册时需填写此 Code 才能关联到你</div>
   </div>
 
+  <div class="card">
+    <button class="analyze-btn" onclick="openMainForStaff('dealer')" id="dl-try-ai" style="margin:0">🍽 <span id="dl-try-ai-txt">试用 AI 分析功能</span></button>
+  </div>
+
   <!-- Stats -->
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:1rem">
     <div style="background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:12px;text-align:center">
@@ -374,6 +381,7 @@ video.live{width:100%;border-radius:var(--radius-lg);border:0.5px solid var(--bo
       <div class="topbar-right">
         <div class="lang-mini" id="main-lang-mini"></div>
         <div class="avatar" id="main-avatar">U</div>
+        <button class="logout-btn" onclick="backToPanel()" id="m-back" style="display:none">← <span id="m-back-txt">返回后台</span></button>
         <button class="logout-btn" onclick="doLogout()" id="m-logout">登出</button>
         <button class="logout-btn" onclick="confirmDeleteAccount()" id="m-delete" style="color:var(--text-danger);border-color:var(--text-danger)" >🗑</button>
       </div>
@@ -1022,6 +1030,9 @@ function applyLang(){
   setText('ad-key-set',t('adminKeySet'));setText('ad-key-del',t('adminKeyDel'));
   setText('ad-pend-title',t('pendingUsers'));setText('ad-all-title',t('allUsers'));
   setText('m-logout',t('logout'));
+  setText('ad-try-ai-txt',zh2?'试用 AI 分析功能':'Try AI Analysis');
+  setText('dl-try-ai-txt',zh2?'试用 AI 分析功能':'Try AI Analysis');
+  setText('m-back-txt',zh2?'返回后台':'Back to Console');
   setText('tab-food-btn',t('foodTab'));setText('tab-sport-btn',t('sportTab'));
   setText('nav-ai-lbl',t('aiTab'));setText('nav-bmi-lbl',t('bmiTab'));setText('nav-recipe-lbl',t('recipeTab'));setText('nav-diary-lbl',t('diaryTab'));setText('nav-about-lbl',t('aboutTab'));
   setText('food-upload-txt',t('foodUpload'));setText('food-cam-btn',t('takePic'));
@@ -1141,7 +1152,8 @@ async function doLogin(){
 }
 
 async function startUserSession(un,udata){
-  currentUser=un;
+  staffMode=null;currentUser=un;
+  id('m-back').style.display='none';id('m-logout').style.display='';id('m-delete').style.display='';
   const cfg=await fsGet('config','app');
   geminiKey=(cfg&&cfg.geminiKey)||'';
   id('main-avatar').textContent=udata.name.charAt(0).toUpperCase();
@@ -1149,6 +1161,33 @@ async function startUserSession(un,udata){
   selectedDate=todayStr();calYear=new Date().getFullYear();calMonth=new Date().getMonth();
   showScreen('screen-main');
   renderCalendar();renderDiaryList(selectedDate);
+}
+
+// ── Staff (admin/dealer) trying the AI features ──
+let staffMode=null;
+async function openMainForStaff(role){
+  spinner(true);
+  try{const cfg=await fsGet('config','app');geminiKey=(cfg&&cfg.geminiKey)||'';}
+  catch(e){geminiKey='';}
+  finally{spinner(false);}
+  staffMode=role;
+  if(role==='dealer'&&currentDealer){
+    currentUser=currentDealer.username;
+    id('main-avatar').textContent=currentDealer.name.charAt(0).toUpperCase();
+  }else{
+    currentUser=ADMIN_USER;
+    id('main-avatar').textContent='AD';
+  }
+  id('no-key-notice').style.display=geminiKey?'none':'block';
+  id('m-logout').style.display='none';id('m-delete').style.display='none';id('m-back').style.display='';
+  selectedDate=todayStr();calYear=new Date().getFullYear();calMonth=new Date().getMonth();
+  showScreen('screen-main');
+  renderCalendar();renderDiaryList(selectedDate);
+}
+function backToPanel(){
+  const m=staffMode;staffMode=null;
+  id('m-back').style.display='none';id('m-logout').style.display='';id('m-delete').style.display='';
+  showScreen(m==='dealer'?'screen-dealer':'screen-admin');
 }
 
 // ── Dealer Session ──

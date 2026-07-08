@@ -1,4 +1,4 @@
-const CACHE = 'niva-v1';
+const CACHE = 'niva-v2';
 const ASSETS = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', e => {
