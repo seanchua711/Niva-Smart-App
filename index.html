@@ -1309,6 +1309,7 @@ async function loadAdmin(){
             <span class="badge" style="font-size:11px;padding:2px 8px;border-radius:99px;font-weight:500;${roleColor}">${roleLbl}</span>
             <button class="expiry-btn" onclick="openExpiryModal('${un}','${u.expiryDate||''}')">📅 ${lang==='zh'?'到期日':'Expiry'}</button>
             <button class="reset-btn" onclick="openResetModal('${un}','${u.name}')">🔑 ${lang==='zh'?'重置密码':'Reset PW'}</button>
+            <button class="expiry-btn" onclick="openRoleModal('${un}','${u.role||'user'}')">🔄 ${lang==='zh'?'角色':'Role'}</button>
             <button class="diary-btn" onclick="openDiaryModal('${un}','${u.name}')">📔 ${lang==='zh'?'日记':'Diary'}</button>
           </div>
         </div>`;
@@ -1355,6 +1356,21 @@ async function confirmApproveWithRole(role){
   }finally{spinner(false);}
 }
 async function rejectUser(un){spinner(true);try{await fsSet('users',un,{status:'rejected'});await loadAdmin();}finally{spinner(false);}}
+
+// Change the role of an already-approved user (reuses the role modal + confirmApproveWithRole)
+function openRoleModal(un,currentRole){
+  currentApproveUser=un;
+  const zh=lang==='zh';
+  const roleName=currentRole==='admin'?'Admin':currentRole==='dealer'?'Dealer':'User';
+  id('role-modal-title').textContent=zh?'🔄 修改角色':'🔄 Change Role';
+  id('role-modal-desc').textContent=zh?`把「${un}」改成哪个角色？（当前：${roleName}）`:`Change role for "${un}"? (Current: ${roleName})`;
+  id('role-user-lbl').textContent=zh?'普通用户 (User)':'Regular User';
+  id('role-user-desc').textContent=zh?'可使用 AI 分析、BMI、日记、食谱功能':'Access AI analysis, BMI, diary and recipe features';
+  id('role-dealer-lbl').textContent=zh?'经销商 (Dealer)':'Dealer';
+  id('role-dealer-desc').textContent=zh?'自动生成专属 Dealer Code，可管理旗下用户':'Auto-generates a unique Dealer Code to manage their own users';
+  id('role-cancel-btn').textContent=zh?'取消':'Cancel';
+  id('role-overlay').classList.add('show');
+}
 
 // ── Expiry Modal ──
 let currentExpiryUser=null;
