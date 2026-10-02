@@ -200,6 +200,18 @@ video.live{width:100%;border-radius:var(--radius-lg);border:0.5px solid var(--bo
 .key-row{display:flex;gap:8px;align-items:center}
 .key-row input{flex:1;padding:9px 12px;border:0.5px solid var(--border-secondary);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-primary);font-size:13px;font-family:monospace;outline:none}
 .key-row button{padding:9px 14px;font-size:13px;border:none;background:var(--teal);color:#fff;border-radius:var(--radius-md);cursor:pointer;font-weight:500}
+.act-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-bottom:0.5px solid var(--border-tertiary)}
+.act-row:last-child{border-bottom:none}
+.act-row.idle{opacity:.45}
+.act-name{font-size:13px;font-weight:600}
+.act-meta{font-size:11px;color:var(--text-tertiary);margin-top:2px}
+.act-nums{display:flex;gap:9px;flex-shrink:0}
+.act-num{text-align:center;min-width:30px}
+.act-num b{display:block;font-size:15px;font-weight:700;line-height:1.2}
+.act-num span{font-size:10px;color:var(--text-tertiary)}
+.act-sum{background:var(--bg-secondary);border-radius:var(--radius-md);padding:10px 12px;margin-bottom:10px;font-size:12px;color:var(--text-secondary);line-height:1.7}
+.act-run{width:100%;padding:9px;margin-bottom:10px;font-size:13px;border:none;background:var(--teal);color:#fff;border-radius:var(--radius-md);cursor:pointer;font-weight:500}
+.act-copy{width:100%;margin-top:10px;padding:9px;font-size:13px;border:0.5px solid var(--border-secondary);background:var(--bg-primary);color:var(--text-primary);border-radius:var(--radius-md);cursor:pointer}
 .key-badge{display:none;align-items:center;gap:6px;font-size:12px;margin-top:6px;color:var(--text-success)}
 .save-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;display:none;align-items:flex-end;justify-content:center}
 .save-overlay.show{display:flex}
@@ -317,6 +329,16 @@ video.live{width:100%;border-radius:var(--radius-lg);border:0.5px solid var(--bo
   <div class="card">
     <div class="section-title" id="ad-all-title">👥 所有用户</div>
     <div id="all-users-list"><div class="empty-state" id="ad-no-users">暂无注册用户</div></div>
+  </div>
+  <div class="card">
+    <div class="section-title" id="ad-act-title">📊 测试活跃度报表</div>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:10px" id="ad-act-desc">统计期间内每位用户的实际使用情况，用于 Google Play 封闭测试报告。</p>
+    <div class="key-row" style="margin-bottom:8px">
+      <input type="date" id="act-from" style="font-family:var(--font);min-width:0">
+      <input type="date" id="act-to" style="font-family:var(--font);min-width:0">
+    </div>
+    <button class="act-run" onclick="loadActivityReport()" id="ad-act-btn">生成</button>
+    <div id="activity-report"><div class="empty-state" id="ad-act-empty">点击「生成」统计这段期间的使用记录</div></div>
   </div>
   </div>
 </div>
@@ -931,6 +953,10 @@ const T={
     adminKeyDesc:'设置后所有已批准的用户无需填写即可直接使用 AI 功能。',
     adminKeySave:'保存',adminKeySet:'Key 已设置',adminKeyDel:'删除',
     pendingUsers:'⏳ 待审批用户',allUsers:'👥 所有用户',
+    actTitle:'📊 测试活跃度报表',actDesc:'统计期间内每位用户的实际使用情况，用于 Google Play 封闭测试报告。',
+    actBtn:'生成',actEmpty:'点击「生成」统计这段期间的使用记录',actNoData:'这段期间没有任何使用记录',
+    actCopy:'📋 复制英文摘要（填问卷用）',actCopied:'✓ 已复制到剪贴板',actFood:'食物',actSport:'运动',actWeight:'体重',actDays:'活跃天',
+    actSumUsers:'有记录的测试者',actSumEntries:'记录总数',actSumAvg:'人均活跃天数',actLast:'最后使用',actNever:'期间无记录',
     noPending:'暂无待审批用户',noUsers:'暂无注册用户',
     approve:'✓ 批准',reject:'✕ 拒绝',
     statusPending:'待审批',statusApproved:'已批准',statusRejected:'已拒绝',
@@ -980,6 +1006,10 @@ const T={
     adminKeyDesc:'Once set, all approved users can use AI features without entering a key.',
     adminKeySave:'Save',adminKeySet:'Key is set',adminKeyDel:'Remove',
     pendingUsers:'⏳ Pending Approval',allUsers:'👥 All Users',
+    actTitle:'📊 Testing Activity Report',actDesc:'Per-tester usage over a date range, for the Google Play closed testing report.',
+    actBtn:'Run',actEmpty:'Pick a range and tap Run',actNoData:'No usage recorded in this period',
+    actCopy:'📋 Copy summary (for the Play form)',actCopied:'✓ Copied to clipboard',actFood:'Food',actSport:'Exercise',actWeight:'Weight',actDays:'Active days',
+    actSumUsers:'Testers with activity',actSumEntries:'Total entries',actSumAvg:'Avg active days',actLast:'Last used',actNever:'No activity',
     noPending:'No pending users',noUsers:'No registered users',
     approve:'✓ Approve',reject:'✕ Reject',
     statusPending:'Pending',statusApproved:'Approved',statusRejected:'Rejected',
@@ -1029,6 +1059,7 @@ function applyLang(){
   setText('ad-key-desc',t('adminKeyDesc'));setText('ad-key-save',t('adminKeySave'));
   setText('ad-key-set',t('adminKeySet'));setText('ad-key-del',t('adminKeyDel'));
   setText('ad-pend-title',t('pendingUsers'));setText('ad-all-title',t('allUsers'));
+  setText('ad-act-title',t('actTitle'));setText('ad-act-desc',t('actDesc'));setText('ad-act-btn',t('actBtn'));setText('ad-act-empty',t('actEmpty'));
   setText('m-logout',t('logout'));
   setText('ad-try-ai-txt',zh2?'试用 AI 分析功能':'Try AI Analysis');
   setText('dl-try-ai-txt',zh2?'试用 AI 分析功能':'Try AI Analysis');
@@ -1314,6 +1345,7 @@ async function loadAdmin(){
           </div>
         </div>`;
       }).join('');
+    actDefaultRange();
   }finally{spinner(false);}
 }
 async function approveUser(un){
@@ -1549,6 +1581,85 @@ function renderAdminDiary(){
         :`<div class="admin-diary-item"><div><div class="admin-diary-name">${e.name}</div><div class="admin-diary-stats">${e.calories} kcal · ${e.duration} min · ${e.intensity}</div></div><span style="font-size:11px;color:var(--text-tertiary)">${e.time}</span></div>`
       ).join('')}
     </div>`).join('');
+}
+
+// ── Testing activity report (evidence for the Play closed-testing review) ──
+let lastActivity=null;
+function dstr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function actDefaultRange(){
+  if(!id('act-from'))return;
+  if(!id('act-from').value)id('act-from').value=dstr(new Date(Date.now()-13*864e5));
+  if(!id('act-to').value)id('act-to').value=todayStr();
+}
+async function loadActivityReport(){
+  const from=id('act-from').value,to=id('act-to').value;
+  if(!from||!to){alert(lang==='zh'?'请先选择日期范围':'Pick a date range first');return;}
+  if(from>to){alert(lang==='zh'?'开始日期不能晚于结束日期':'Start date is after the end date');return;}
+  spinner(true);
+  try{
+    const [users,diary,weights]=await Promise.all([fsGetAll('users'),fsGetAll('diary'),fsGetAll('weightlog')]);
+    const inRange=d=>!!d&&d>=from&&d<=to;
+    const stat={};
+    Object.entries(users).forEach(([un,u])=>{if((u.role||'user')==='user')stat[un]={food:0,sport:0,weight:0,days:new Set(),last:''};});
+    Object.values(diary).forEach(d=>{
+      const st=stat[d.user];
+      if(!st||!inRange(d.date)||!(d.entries||[]).length)return;
+      d.entries.forEach(e=>{if(e.type==='sport')st.sport++;else st.food++;});
+      st.days.add(d.date);if(d.date>st.last)st.last=d.date;
+    });
+    Object.entries(weights).forEach(([un,w])=>{
+      const st=stat[un];if(!st)return;
+      (w.entries||[]).forEach(e=>{if(!inRange(e.date))return;st.weight++;st.days.add(e.date);if(e.date>st.last)st.last=e.date;});
+    });
+    const rows=Object.entries(stat).map(([un,st])=>({
+      un,name:(users[un].name||un),food:st.food,sport:st.sport,weight:st.weight,
+      days:st.days.size,last:st.last,total:st.food+st.sport+st.weight
+    })).sort((a,b)=>b.days-a.days||b.total-a.total||a.name.localeCompare(b.name));
+    lastActivity={from,to,rows};
+    renderActivityReport();
+  }catch(e){id('activity-report').innerHTML=`<div class="empty-state">${e.message}</div>`;}
+  finally{spinner(false);}
+}
+function renderActivityReport(){
+  if(!lastActivity)return;
+  const {from,to,rows}=lastActivity;
+  if(rows.length===0){id('activity-report').innerHTML=`<div class="empty-state">${t('actNoData')}</div>`;return;}
+  const active=rows.filter(r=>r.total>0);
+  const entries=rows.reduce((a,r)=>a+r.total,0);
+  const avg=active.length?(active.reduce((a,r)=>a+r.days,0)/active.length).toFixed(1):'0';
+  id('activity-report').innerHTML=
+    `<div class="act-sum">📅 ${from} → ${to}<br>${t('actSumUsers')}: <b>${active.length} / ${rows.length}</b> · ${t('actSumEntries')}: <b>${entries}</b> · ${t('actSumAvg')}: <b>${avg}</b></div>`+
+    rows.map(r=>`<div class="act-row${r.total?'':' idle'}">
+      <div><div class="act-name">${r.name}</div><div class="act-meta">@${r.un} · ${r.last?t('actLast')+' '+r.last:t('actNever')}</div></div>
+      <div class="act-nums">
+        <div class="act-num"><b>${r.food}</b><span>${t('actFood')}</span></div>
+        <div class="act-num"><b>${r.sport}</b><span>${t('actSport')}</span></div>
+        <div class="act-num"><b>${r.weight}</b><span>${t('actWeight')}</span></div>
+        <div class="act-num"><b>${r.days}</b><span>${t('actDays')}</span></div>
+      </div>
+    </div>`).join('')+
+    `<button class="act-copy" onclick="copyActivitySummary(this)">${t('actCopy')}</button>`;
+}
+function copyActivitySummary(btn){
+  if(!lastActivity)return;
+  const {from,to,rows}=lastActivity;
+  const active=rows.filter(r=>r.total>0);
+  const sum=k=>rows.reduce((a,r)=>a+r[k],0);
+  const avg=active.length?(active.reduce((a,r)=>a+r.days,0)/active.length).toFixed(1):'0';
+  const txt=[
+    `Closed testing activity, ${from} to ${to}`,
+    `Testers with recorded activity: ${active.length} of ${rows.length}`,
+    `Total entries: ${sum('total')} (food ${sum('food')}, exercise ${sum('sport')}, weight ${sum('weight')})`,
+    `Average active days per active tester: ${avg}`,
+    '',
+    'Per tester:',
+    ...rows.map(r=>r.total
+      ?`- ${r.name}: ${r.total} ${r.total===1?'entry':'entries'} (food ${r.food}, exercise ${r.sport}, weight ${r.weight}) on ${r.days} active ${r.days===1?'day':'days'}, last used ${r.last}`
+      :`- ${r.name}: no activity in this period`)
+  ].join('\n');
+  const done=()=>{const o=btn.textContent;btn.textContent=t('actCopied');setTimeout(()=>{btn.textContent=o;},1800);};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done).catch(()=>prompt('Copy:',txt));
+  else prompt('Copy:',txt);
 }
 
 function closeModal(id_){id(id_).classList.remove('show');}
