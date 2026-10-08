@@ -1,16 +1,26 @@
-const CACHE = 'niva-v4';
-const ASSETS = ['/', '/index.html', '/manifest.json'];
+const CACHE = 'niva-v5';
+const BASE = '/Niva-Smart-App';
+const ASSETS = [
+  BASE + '/',
+  BASE + '/index.html',
+  BASE + '/manifest.json',
+  BASE + '/icon-192.png',
+  BASE + '/icon-512.png',
+];
 
+// Precaching is best-effort. If install could fail, this worker could never
+// replace an older one — that is how phones got stuck on the June niva-v2
+// cache-first worker: every later version precached root paths that 404 on
+// GitHub Pages, so addAll rejected and install never completed.
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).catch(() => {}));
   self.skipWaiting();
 });
 
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys =>
     Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-  ));
-  self.clients.claim();
+  ).then(() => self.clients.claim()));
 });
 
 self.addEventListener('message', e => {
@@ -19,7 +29,8 @@ self.addEventListener('message', e => {
 
 self.addEventListener('fetch', e => {
   const req = e.request;
-  if (req.url.includes('generativelanguage.googleapis.com')) return;
+  // Same-origin GETs only. Firebase, Firestore and Gemini go straight to the network.
+  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
 
   // Network-first for page navigations / HTML so app updates show up immediately.
   // Cache is only the offline fallback.
@@ -28,11 +39,13 @@ self.addEventListener('fetch', e => {
   if (isHTML) {
     e.respondWith(
       fetch(req).then(res => {
-        const clone = res.clone();
-        caches.open(CACHE).then(c => c.put(req, clone));
+        if (res.ok) {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(req, clone));
+        }
         return res;
       }).catch(() =>
-        caches.match(req).then(c => c || caches.match('/index.html'))
+        caches.match(req).then(c => c || caches.match(BASE + '/index.html'))
       )
     );
     return;
